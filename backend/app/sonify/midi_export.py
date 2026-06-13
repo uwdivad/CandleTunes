@@ -2,6 +2,7 @@ import io
 
 import pretty_midi
 
+from app.logging_config import log_call
 from app.models.sonify import NoteEvent, TrackInfo
 
 GM_PROGRAM_MAP: dict[str, int] = {
@@ -12,6 +13,7 @@ GM_PROGRAM_MAP: dict[str, int] = {
 }
 
 
+@log_call
 def notes_to_midi_bytes(notes: list[NoteEvent], tracks: list[TrackInfo]) -> bytes:
     pm = pretty_midi.PrettyMIDI(initial_tempo=120)
 

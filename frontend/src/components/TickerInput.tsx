@@ -29,6 +29,10 @@ export function TickerInput({ tickers, onChange, colorForTrack }: TickerInputPro
     onChange(tickers.filter((x) => x !== t));
   };
 
+  const removeAllTickers = () => {
+    onChange([]);
+  };
+
   return (
     <div className="field-group ticker-input">
       <label className="field-label">Tickers</label>
@@ -42,6 +46,11 @@ export function TickerInput({ tickers, onChange, colorForTrack }: TickerInputPro
             </button>
           </span>
         ))}
+        {tickers.length > 0 && (
+          <button type="button" className="remove-all-btn" onClick={removeAllTickers}>
+            Remove all
+          </button>
+        )}
       </div>
       <div className="ticker-input-row">
         <input

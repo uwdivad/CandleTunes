@@ -1,6 +1,9 @@
 import numpy as np
 
+from app.logging_config import log_call
 
+
+@log_call
 def compute_log_returns(close: np.ndarray) -> np.ndarray:
     log_returns = np.zeros(len(close))
     if len(close) > 1:
@@ -8,6 +11,7 @@ def compute_log_returns(close: np.ndarray) -> np.ndarray:
     return log_returns
 
 
+@log_call
 def robust_zscore_clip(values: np.ndarray) -> np.ndarray:
     """Z-score, clipped to [-3, 3] and rescaled to [-1, 1]."""
     mu = values.mean()
@@ -18,6 +22,7 @@ def robust_zscore_clip(values: np.ndarray) -> np.ndarray:
     return np.clip(z, -3, 3) / 3.0
 
 
+@log_call
 def normalize_to_range(
     values: np.ndarray, vmin: float | None = None, vmax: float | None = None
 ) -> np.ndarray:
@@ -32,6 +37,7 @@ def normalize_to_range(
     return (values - vmin) / price_range
 
 
+@log_call
 def quantize_pitch(level: float, z_clipped: float, scale_pitches: list[int]) -> int:
     """Combine chart-level position (70%) and return-direction (30%) into a single
     [0,1] signal, then quantize to the nearest pitch in `scale_pitches`."""

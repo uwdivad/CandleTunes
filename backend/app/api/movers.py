@@ -1,11 +1,13 @@
 from fastapi import APIRouter, HTTPException
 
 from app.data.yfinance_client import fetch_top_movers
+from app.logging_config import log_call
 from app.models.movers import MoverItem, MoversResponse
 
 router = APIRouter()
 
 
+@log_call
 def _to_mover_item(quote: dict) -> MoverItem:
     return MoverItem(
         symbol=quote.get("symbol", ""),
@@ -18,6 +20,7 @@ def _to_mover_item(quote: dict) -> MoverItem:
 
 
 @router.get("/movers", response_model=MoversResponse)
+@log_call
 def get_movers() -> MoversResponse:
     try:
         data = fetch_top_movers()

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.data.yfinance_client import fetch_ohlcv
+from app.logging_config import log_call
 from app.models.sonify import SonifyRequest, SonifyResponse
 from app.sonify.engine import sonify_composition
 
@@ -8,6 +9,7 @@ router = APIRouter()
 
 
 @router.post("/sonify", response_model=SonifyResponse)
+@log_call
 def sonify(request: SonifyRequest) -> SonifyResponse:
     try:
         notes, track_infos = sonify_composition(

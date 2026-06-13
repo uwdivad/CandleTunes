@@ -2,6 +2,7 @@ from typing import Callable
 
 import pandas as pd
 
+from app.logging_config import log_call
 from app.models.sonify import NoteEvent, ScaleName, TrackInfo, TrackRequest
 from app.sonify.pitch import compute_log_returns, normalize_to_range, quantize_pitch, robust_zscore_clip
 from app.sonify.scales import build_scale_pitches
@@ -13,16 +14,19 @@ LEGATO = 0.9
 MAX_BARS = 1000
 
 
+@log_call
 def register_for_track(track_index: int) -> int:
     return BASE_REGISTERS[track_index % len(BASE_REGISTERS)]
 
 
+@log_call
 def instrument_for_track(track_index: int) -> str:
     if track_index == 0:
         return "piano"
     return SYNTH_INSTRUMENTS[(track_index - 1) % len(SYNTH_INSTRUMENTS)]
 
 
+@log_call
 def sonify_track(
     df: pd.DataFrame,
     track_index: int,
@@ -113,6 +117,7 @@ def sonify_track(
     return notes
 
 
+@log_call
 def _maybe_resample(df: pd.DataFrame) -> pd.DataFrame:
     if len(df) <= MAX_BARS:
         return df
@@ -123,6 +128,7 @@ def _maybe_resample(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+@log_call
 def sonify_composition(
     tracks: list[TrackRequest],
     total_duration_sec: float,

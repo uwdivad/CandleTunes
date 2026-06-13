@@ -1,6 +1,9 @@
 import numpy as np
 
+from app.logging_config import log_call
 
+
+@log_call
 def _normalize(values: np.ndarray) -> np.ndarray:
     vmin, vmax = float(values.min()), float(values.max())
     rng = vmax - vmin
@@ -9,6 +12,7 @@ def _normalize(values: np.ndarray) -> np.ndarray:
     return (values - vmin) / rng
 
 
+@log_call
 def compute_velocity(volume: np.ndarray, hl_range_pct: np.ndarray) -> np.ndarray:
     """MIDI velocity (1-127) from a 0.6/0.4 blend of normalized volume and
     normalized high-low range. Falls back to pure volatility if volume is all-zero

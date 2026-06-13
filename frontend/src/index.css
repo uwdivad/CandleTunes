@@ -94,6 +94,18 @@ h1 {
   padding: 0;
 }
 
+.remove-all-btn {
+  font-size: 13px;
+  color: var(--text-muted);
+  border-radius: 16px;
+  padding: 4px 10px;
+}
+
+.remove-all-btn:hover {
+  color: var(--loss);
+  border-color: var(--loss);
+}
+
 .ticker-input-row {
   display: flex;
   gap: 8px;

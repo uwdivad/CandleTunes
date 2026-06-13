@@ -2,10 +2,12 @@ import pandas as pd
 import yfinance as yf
 
 from app.data.cache import get_cached, get_cached_value, set_cached, set_cached_value
+from app.logging_config import log_call
 
 MOVERS_CACHE_TTL_SECONDS = 900
 
 
+@log_call
 def fetch_ohlcv(ticker: str, start: str, end: str, interval: str = "1d") -> pd.DataFrame:
     cached = get_cached(ticker, start, end, interval)
     if cached is not None:
@@ -32,6 +34,7 @@ def fetch_ohlcv(ticker: str, start: str, end: str, interval: str = "1d") -> pd.D
     return df
 
 
+@log_call
 def fetch_top_movers(count: int = 5) -> dict[str, list[dict]]:
     cache_key = "top_movers"
     cached = get_cached_value(cache_key, MOVERS_CACHE_TTL_SECONDS)

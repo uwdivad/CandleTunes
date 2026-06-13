@@ -1,3 +1,5 @@
+from app.logging_config import log_call
+
 SCALES: dict[str, list[int]] = {
     "major": [0, 2, 4, 5, 7, 9, 11],
     "minor": [0, 2, 3, 5, 7, 8, 10],
@@ -7,6 +9,7 @@ SCALES: dict[str, list[int]] = {
 }
 
 
+@log_call
 def build_scale_pitches(
     root_note: int, scale_name: str, base_midi: int, range_semitones: int
 ) -> list[int]:
