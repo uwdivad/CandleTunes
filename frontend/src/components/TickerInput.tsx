@@ -10,11 +10,19 @@ export function TickerInput({ tickers, onChange, colorForTrack }: TickerInputPro
   const [value, setValue] = useState("");
 
   const addTicker = () => {
-    const t = value.trim().toUpperCase();
-    if (t && !tickers.includes(t)) {
-      onChange([...tickers, t]);
-      setValue("");
+    const parts = value
+      .split(/[\s,]+/)
+      .map((t) => t.trim().toUpperCase())
+      .filter((t) => t.length > 0);
+
+    if (parts.length === 0) return;
+
+    const next = [...tickers];
+    for (const t of parts) {
+      if (!next.includes(t)) next.push(t);
     }
+    onChange(next);
+    setValue("");
   };
 
   const removeTicker = (t: string) => {

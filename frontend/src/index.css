@@ -5,6 +5,8 @@
   --text: #e4e4e7;
   --text-muted: #9ca3af;
   --accent: #4f9dde;
+  --gain: #26a69a;
+  --loss: #ef5350;
 
   font: 16px/145% system-ui, "Segoe UI", Roboto, sans-serif;
   color-scheme: dark;
@@ -158,6 +160,12 @@ button:disabled {
   cursor: not-allowed;
 }
 
+input[type="range"] {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
 .generate-btn {
   align-self: flex-start;
   background: var(--accent);
@@ -196,6 +204,29 @@ button:disabled {
   text-align: center;
 }
 
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.volume-icon {
+  font-size: 14px;
+}
+
+.volume-bar {
+  width: 90px;
+}
+
+.recording-btn {
+  border-color: #ef5350;
+  color: #ef5350;
+}
+
+.recording-btn:hover {
+  border-color: #ef5350;
+}
+
 /* Piano */
 .piano-keyboard {
   display: block;
@@ -210,6 +241,98 @@ button:disabled {
 
 .piano-key {
   transition: fill 150ms ease-out;
+}
+
+/* Top movers */
+.movers-panel {
+  display: flex;
+  gap: 16px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.movers-section {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.movers-heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 4px;
+}
+
+.mover-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  padding: 2px 0;
+}
+
+.mover-symbol {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 60px;
+  text-align: center;
+  background: #2a2c38;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.mover-symbol:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: #323543;
+}
+
+.mover-symbol:disabled {
+  color: var(--text-muted);
+  background: transparent;
+  border-color: var(--border);
+  cursor: default;
+  opacity: 1;
+}
+
+.mover-name {
+  flex: 1;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mover-price {
+  font-family: ui-monospace, Consolas, monospace;
+  min-width: 64px;
+  text-align: right;
+}
+
+.mover-change {
+  font-family: ui-monospace, Consolas, monospace;
+  min-width: 130px;
+  text-align: right;
+}
+
+.mover-change.gain {
+  color: var(--gain);
+}
+
+.mover-change.loss {
+  color: var(--loss);
 }
 
 /* Charts */

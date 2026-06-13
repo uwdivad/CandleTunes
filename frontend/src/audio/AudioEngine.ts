@@ -6,6 +6,8 @@ type Instrument = Tone.Sampler | Tone.PolySynth;
 type ScheduledNote = NoteEvent & { time: number };
 type SimpleOscillatorType = "sine" | "triangle" | "sawtooth" | "square";
 
+const VOLUME_RANGE_DB = 48;
+
 const SYNTH_OSCILLATORS: Record<string, SimpleOscillatorType> = {
   synth_triangle: "triangle",
   synth_sine: "sine",
@@ -25,6 +27,12 @@ const PIANO_SAMPLE_URLS: Record<string, string> = {
 export class AudioEngine {
   private instruments: Map<number, Instrument> = new Map();
   private part: Tone.Part<ScheduledNote> | null = null;
+  private masterVolume: Tone.Volume = new Tone.Volume(0).toDestination();
+  private recorder: Tone.Recorder = new Tone.Recorder();
+
+  constructor() {
+    this.masterVolume.connect(this.recorder);
+  }
 
   async init(tracks: TrackInfo[]): Promise<void> {
     this.dispose();
@@ -35,19 +43,33 @@ export class AudioEngine {
           urls: PIANO_SAMPLE_URLS,
           release: 1,
           baseUrl: "https://tonejs.github.io/audio/salamander/",
-        }).toDestination();
+        }).connect(this.masterVolume);
         this.instruments.set(track.track, sampler);
       } else {
         const oscType = SYNTH_OSCILLATORS[track.instrument] ?? "triangle";
         const synth = new Tone.PolySynth(Tone.Synth, {
           oscillator: { type: oscType },
           envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 0.6 },
-        }).toDestination();
+        }).connect(this.masterVolume);
         this.instruments.set(track.track, synth);
       }
     }
 
     await Tone.loaded();
+  }
+
+  setVolume(percent: number): void {
+    const clamped = Math.max(0, Math.min(100, percent));
+    this.masterVolume.volume.value = clamped <= 0 ? -Infinity : (clamped / 100) * VOLUME_RANGE_DB - VOLUME_RANGE_DB;
+  }
+
+  startRecording(): void {
+    this.recorder.start();
+  }
+
+  async stopRecording(): Promise<Blob | null> {
+    if (this.recorder.state !== "started") return null;
+    return await this.recorder.stop();
   }
 
   schedule(

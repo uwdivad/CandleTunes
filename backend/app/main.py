@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import chart, midi, sonify
+from app.api import chart, midi, movers, sonify
 from app.config import settings
 
 app = FastAPI(title="CandleMusic API")
@@ -16,6 +16,7 @@ app.add_middleware(
 app.include_router(chart.router, prefix="/api")
 app.include_router(sonify.router, prefix="/api")
 app.include_router(midi.router, prefix="/api")
+app.include_router(movers.router, prefix="/api")
 
 
 @app.get("/api/health")

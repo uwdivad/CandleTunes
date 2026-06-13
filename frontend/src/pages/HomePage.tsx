@@ -9,8 +9,10 @@ import { PianoKeyboard } from "../components/PianoKeyboard";
 import { SonifyControls } from "../components/SonifyControls";
 import { TickerChartPanel } from "../components/TickerChartPanel";
 import { TickerInput } from "../components/TickerInput";
+import { TopMovers } from "../components/TopMovers";
 import { TransportControls } from "../components/TransportControls";
 import { usePlaybackStore } from "../state/playbackStore";
+import { downloadBlob } from "../utils/download";
 
 function defaultDates() {
   const end = new Date();
@@ -19,14 +21,31 @@ function defaultDates() {
   return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
 }
 
+const TICKERS_STORAGE_KEY = "candlemusic.tickers";
+
+function loadStoredTickers(): string[] {
+  try {
+    const raw = localStorage.getItem(TICKERS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (Array.isArray(parsed) && parsed.every((t) => typeof t === "string") && parsed.length > 0) {
+      return parsed;
+    }
+  } catch {
+    // ignore malformed storage
+  }
+  return ["AAPL"];
+}
+
 export function HomePage() {
-  const [tickers, setTickers] = useState<string[]>(["AAPL"]);
+  const [tickers, setTickers] = useState<string[]>(loadStoredTickers);
   const [range, setRange] = useState(defaultDates());
   const [scale, setScale] = useState<ScaleName>("major");
   const [rootNote, setRootNote] = useState(0);
   const [notesPerBar, setNotesPerBar] = useState<1 | 2>(1);
   const [totalDuration, setTotalDuration] = useState(60);
   const [composition, setComposition] = useState<SonifyResponse | null>(null);
+  const [volume, setVolume] = useState(80);
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
 
   const audioEngineRef = useRef<AudioEngine>(new AudioEngine());
   const animationRef = useRef<number | null>(null);
@@ -50,6 +69,14 @@ export function HomePage() {
   }, []);
 
   useEffect(() => {
+    audioEngineRef.current.setVolume(volume);
+  }, [volume]);
+
+  useEffect(() => {
+    localStorage.setItem(TICKERS_STORAGE_KEY, JSON.stringify(tickers));
+  }, [tickers]);
+
+  useEffect(() => {
     if (!isPlaying) {
       if (animationRef.current !== null) cancelAnimationFrame(animationRef.current);
       return;
@@ -62,6 +89,14 @@ export function HomePage() {
         audioEngineRef.current.seek(0);
         setPlaying(false);
         setCurrentTime(0);
+        if (isRecordingAudio) {
+          audioEngineRef.current.stopRecording().then((blob) => {
+            if (!blob) return;
+            const ext = blob.type.includes("mp4") ? "mp4" : "webm";
+            downloadBlob(blob, `candlemusic.${ext}`);
+          });
+          setIsRecordingAudio(false);
+        }
         return;
       }
       setCurrentTime(t);
@@ -72,7 +107,7 @@ export function HomePage() {
     return () => {
       if (animationRef.current !== null) cancelAnimationFrame(animationRef.current);
     };
-  }, [isPlaying, composition, setCurrentTime, setPlaying]);
+  }, [isPlaying, composition, setCurrentTime, setPlaying, isRecordingAudio]);
 
   const handleGenerate = async () => {
     reset();
@@ -114,12 +149,42 @@ export function HomePage() {
     midiMutation.mutate({ notes: composition.notes, tracks: composition.tracks });
   };
 
+  const handleDownloadAudio = async () => {
+    if (!composition || isRecordingAudio || isPlaying) return;
+    setIsRecordingAudio(true);
+    audioEngineRef.current.seek(0);
+    setCurrentTime(0);
+    audioEngineRef.current.startRecording();
+    await audioEngineRef.current.play();
+    setPlaying(true);
+  };
+
+  const handleStopRecording = () => {
+    audioEngineRef.current.pause();
+    audioEngineRef.current.seek(0);
+    setPlaying(false);
+    setCurrentTime(0);
+    setIsRecordingAudio(false);
+    audioEngineRef.current.stopRecording().then((blob) => {
+      if (!blob) return;
+      const ext = blob.type.includes("mp4") ? "mp4" : "webm";
+      downloadBlob(blob, `candlemusic.${ext}`);
+    });
+  };
+
   return (
     <div className="home-page">
       <header>
         <h1>CandleMusic</h1>
         <p className="subtitle">Turn financial charts into music, played on a virtual piano.</p>
       </header>
+
+      <TopMovers
+        tickers={tickers}
+        onAddTicker={(symbol) => {
+          if (!tickers.includes(symbol)) setTickers([...tickers, symbol]);
+        }}
+      />
 
       <section className="controls">
         <TickerInput tickers={tickers} onChange={setTickers} colorForTrack={colorForTrack} />
@@ -157,10 +222,16 @@ export function HomePage() {
             isPlaying={isPlaying}
             currentTime={currentTime}
             totalDuration={composition.total_duration_sec}
+            volume={volume}
             onPlayPause={handlePlayPause}
             onSeek={handleSeek}
+            onVolumeChange={setVolume}
             onDownloadMidi={handleDownloadMidi}
             midiDownloadDisabled={midiMutation.isPending}
+            onDownloadAudio={handleDownloadAudio}
+            audioDownloadDisabled={isPlaying}
+            onStopRecording={handleStopRecording}
+            isRecordingAudio={isRecordingAudio}
           />
 
           <PianoKeyboard

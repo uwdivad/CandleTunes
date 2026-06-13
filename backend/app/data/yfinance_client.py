@@ -1,7 +1,9 @@
 import pandas as pd
 import yfinance as yf
 
-from app.data.cache import get_cached, set_cached
+from app.data.cache import get_cached, get_cached_value, set_cached, set_cached_value
+
+MOVERS_CACHE_TTL_SECONDS = 900
 
 
 def fetch_ohlcv(ticker: str, start: str, end: str, interval: str = "1d") -> pd.DataFrame:
@@ -28,3 +30,23 @@ def fetch_ohlcv(ticker: str, start: str, end: str, interval: str = "1d") -> pd.D
 
     set_cached(ticker, start, end, interval, df)
     return df
+
+
+def fetch_top_movers(count: int = 5) -> dict[str, list[dict]]:
+    cache_key = "top_movers"
+    cached = get_cached_value(cache_key, MOVERS_CACHE_TTL_SECONDS)
+    if cached is not None:
+        return cached
+
+    try:
+        gainers = yf.screen("day_gainers")
+        losers = yf.screen("day_losers")
+    except Exception as exc:
+        raise ValueError(f"Failed to fetch top movers: {exc}") from exc
+
+    result = {
+        "gainers": gainers.get("quotes", [])[:count],
+        "losers": losers.get("quotes", [])[:count],
+    }
+    set_cached_value(cache_key, result)
+    return result

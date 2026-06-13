@@ -65,3 +65,17 @@ export interface MidiExportRequest {
   notes: NoteEvent[];
   tracks: TrackInfo[];
 }
+
+export interface MoverItem {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  change_percent: number;
+  volume: number;
+}
+
+export interface MoversResponse {
+  gainers: MoverItem[];
+  losers: MoverItem[];
+}

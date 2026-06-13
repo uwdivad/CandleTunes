@@ -24,3 +24,17 @@ def set_cached(ticker: str, start: str, end: str, interval: str, df: pd.DataFram
     path = settings.cache_dir / f"{_cache_key(ticker, start, end, interval)}.pkl"
     with open(path, "wb") as f:
         pickle.dump(df, f)
+
+
+def get_cached_value(key: str, ttl_seconds: int) -> object | None:
+    path = settings.cache_dir / f"{hashlib.sha256(key.encode()).hexdigest()}.pkl"
+    if path.exists() and (time.time() - path.stat().st_mtime) < ttl_seconds:
+        with open(path, "rb") as f:
+            return pickle.load(f)
+    return None
+
+
+def set_cached_value(key: str, value: object) -> None:
+    path = settings.cache_dir / f"{hashlib.sha256(key.encode()).hexdigest()}.pkl"
+    with open(path, "wb") as f:
+        pickle.dump(value, f)

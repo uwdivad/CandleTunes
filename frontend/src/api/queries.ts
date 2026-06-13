@@ -4,6 +4,7 @@ import { apiClient } from "./client";
 import type {
   ChartResponse,
   MidiExportRequest,
+  MoversResponse,
   SonifyRequest,
   SonifyResponse,
 } from "./types";
@@ -23,6 +24,17 @@ export function useChartData(
       return data;
     },
     enabled: !!ticker && !!start && !!end,
+  });
+}
+
+export function useTopMovers() {
+  return useQuery({
+    queryKey: ["movers"],
+    queryFn: async () => {
+      const { data } = await apiClient.get<MoversResponse>("/api/movers");
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
