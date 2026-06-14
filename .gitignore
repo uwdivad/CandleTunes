@@ -7,3 +7,4 @@ frontend/dist/
 .idea/
 .env
 *.local
+ai_history/

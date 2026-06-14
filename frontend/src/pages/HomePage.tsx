@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useMidiExport, useSonify } from "../api/queries";
-import type { ScaleName, SonifyResponse } from "../api/types";
+import type { ScaleName, SonifyResponse, TrackConfig } from "../api/types";
 import { AudioEngine } from "../audio/AudioEngine";
 import { colorForTrack } from "../audio/trackColors";
 import { DateRangePicker } from "../components/DateRangePicker";
@@ -22,6 +22,7 @@ function defaultDates() {
 }
 
 const TICKERS_STORAGE_KEY = "candlemusic.tickers";
+const GENERATION_DEBOUNCE_MS = 500;
 
 function loadStoredTickers(): string[] {
   try {
@@ -42,12 +43,34 @@ export function HomePage() {
   const [scale, setScale] = useState<ScaleName>("major");
   const [rootNote, setRootNote] = useState(0);
   const [notesPerBar, setNotesPerBar] = useState<1 | 2>(1);
+  const [speedMode, setSpeedMode] = useState<'bpm' | 'duration'>('bpm');
+  const [bpm, setBpm] = useState(120);
   const [totalDuration, setTotalDuration] = useState(60);
+  const [globalInstrument, setGlobalInstrument] = useState<string>('');
   const [composition, setComposition] = useState<SonifyResponse | null>(null);
   const [volume, setVolume] = useState(80);
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [showLabels, setShowLabels] = useState(false);
+  const [customColors, setCustomColors] = useState<Record<string, string>>({});
+  const [trackConfigs, setTrackConfigs] = useState<Record<string, TrackConfig>>({});
 
-  const audioEngineRef = useRef<AudioEngine>(new AudioEngine());
+  const resolveColor = (ticker: string, trackIndex: number) => {
+    return customColors[ticker] || colorForTrack(trackIndex);
+  };
+
+  const handleColorChange = (ticker: string, color: string) => {
+    setCustomColors((prev) => ({ ...prev, [ticker]: color }));
+  };
+
+  const handleTrackConfigChange = (ticker: string, config: TrackConfig) => {
+    setTrackConfigs((prev) => ({ ...prev, [ticker]: config }));
+  };
+
+  const audioEngineRef = useRef<AudioEngine | null>(null);
+  if (audioEngineRef.current === null) {
+    audioEngineRef.current = new AudioEngine();
+  }
+  const audioEngine = audioEngineRef.current;
   const animationRef = useRef<number | null>(null);
 
   const sonifyMutation = useSonify();
@@ -60,16 +83,17 @@ export function HomePage() {
   const setCurrentTime = usePlaybackStore((s) => s.setCurrentTime);
   const noteOn = usePlaybackStore((s) => s.noteOn);
   const noteOff = usePlaybackStore((s) => s.noteOff);
+  const clearActiveNotes = usePlaybackStore((s) => s.clearActiveNotes);
   const reset = usePlaybackStore((s) => s.reset);
 
   useEffect(() => {
     return () => {
-      audioEngineRef.current.dispose();
+      audioEngine.dispose();
     };
   }, []);
 
   useEffect(() => {
-    audioEngineRef.current.setVolume(volume);
+    audioEngine.setVolume(volume);
   }, [volume]);
 
   useEffect(() => {
@@ -83,14 +107,14 @@ export function HomePage() {
     }
 
     const tick = () => {
-      const t = audioEngineRef.current.getCurrentTime();
+      const t = audioEngine.getCurrentTime();
       if (composition && t >= composition.total_duration_sec) {
-        audioEngineRef.current.pause();
-        audioEngineRef.current.seek(0);
+        audioEngine.pause();
+        audioEngine.seek(0);
         setPlaying(false);
         setCurrentTime(0);
         if (isRecordingAudio) {
-          audioEngineRef.current.stopRecording().then((blob) => {
+          audioEngine.stopRecording().then((blob) => {
             if (!blob) return;
             const ext = blob.type.includes("mp4") ? "mp4" : "webm";
             downloadBlob(blob, `candlemusic.${ext}`);
@@ -109,38 +133,72 @@ export function HomePage() {
     };
   }, [isPlaying, composition, setCurrentTime, setPlaying, isRecordingAudio]);
 
-  const handleGenerate = async () => {
-    reset();
-    setComposition(null);
-    const result = await sonifyMutation.mutateAsync({
-      tracks: tickers.map((ticker) => ({ ticker, start: range.start, end: range.end })),
-      total_duration_sec: totalDuration,
-      notes_per_bar: notesPerBar,
-      scale,
-      root_note: rootNote,
-    });
-    setComposition(result);
-    await audioEngineRef.current.init(result.tracks);
-    audioEngineRef.current.schedule(
-      result.notes,
-      (note) => noteOn(note.track, note.pitch_midi),
-      (note) => noteOff(note.track, note.pitch_midi)
-    );
-  };
+  const generationRequestRef = useRef(0);
+
+  useEffect(() => {
+    const requestId = ++generationRequestRef.current;
+
+    if (tickers.length === 0) {
+      audioEngine.dispose();
+      reset();
+      setComposition(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const result = await sonifyMutation.mutateAsync({
+          tracks: tickers.map((ticker) => ({
+            ticker,
+            start: range.start,
+            end: range.end,
+            instrument: trackConfigs[ticker]?.instrument,
+            scale: trackConfigs[ticker]?.scale,
+            root_note: trackConfigs[ticker]?.rootNote,
+            notes_per_bar: trackConfigs[ticker]?.notesPerBar,
+          })),
+          bpm: speedMode === 'bpm' ? bpm : undefined,
+          total_duration_sec: speedMode === 'duration' ? totalDuration : undefined,
+          notes_per_bar: notesPerBar,
+          scale,
+          root_note: rootNote,
+          global_instrument: globalInstrument || undefined,
+        });
+
+        if (generationRequestRef.current !== requestId) return;
+
+        clearActiveNotes();
+        await audioEngine.init(result.tracks);
+        if (generationRequestRef.current !== requestId) return;
+
+        audioEngine.schedule(
+          result.notes,
+          (note) => noteOn(note.track, note.pitch_midi),
+          (note) => noteOff(note.track, note.pitch_midi)
+        );
+        setComposition(result);
+      } catch {
+        // surfaced via sonifyMutation.error
+      }
+    }, GENERATION_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickers, range.start, range.end, scale, rootNote, notesPerBar, speedMode, bpm, totalDuration, globalInstrument, trackConfigs]);
 
   const handlePlayPause = async () => {
     if (!composition) return;
     if (isPlaying) {
-      audioEngineRef.current.pause();
+      audioEngine.pause();
       setPlaying(false);
     } else {
-      await audioEngineRef.current.play();
+      await audioEngine.play();
       setPlaying(true);
     }
   };
 
   const handleSeek = (time: number) => {
-    audioEngineRef.current.seek(time);
+    audioEngine.seek(time);
     setCurrentTime(time);
   };
 
@@ -152,72 +210,141 @@ export function HomePage() {
   const handleDownloadAudio = async () => {
     if (!composition || isRecordingAudio || isPlaying) return;
     setIsRecordingAudio(true);
-    audioEngineRef.current.seek(0);
+    audioEngine.seek(0);
     setCurrentTime(0);
-    audioEngineRef.current.startRecording();
-    await audioEngineRef.current.play();
+    audioEngine.startRecording();
+    await audioEngine.play();
     setPlaying(true);
   };
 
   const handleStopRecording = () => {
-    audioEngineRef.current.pause();
-    audioEngineRef.current.seek(0);
+    audioEngine.pause();
+    audioEngine.seek(0);
     setPlaying(false);
     setCurrentTime(0);
     setIsRecordingAudio(false);
-    audioEngineRef.current.stopRecording().then((blob) => {
+    audioEngine.stopRecording().then((blob) => {
       if (!blob) return;
       const ext = blob.type.includes("mp4") ? "mp4" : "webm";
       downloadBlob(blob, `candlemusic.${ext}`);
     });
   };
 
+  const handlePlayManualNote = (midi: number) => {
+    audioEngine.playManualNote(midi);
+  };
+
+  const handleStopManualNote = (midi: number) => {
+    audioEngine.stopManualNote(midi);
+  };
+
   return (
-    <div className="home-page">
-      <header>
-        <h1>CandleMusic</h1>
-        <p className="subtitle">Turn financial charts into music, played on a virtual piano.</p>
-      </header>
+    <div className="studio-layout">
+      <aside className="sidebar">
+        <header>
+          <h1>CandleMusic</h1>
+          <p className="subtitle">Turn financial charts into music, played on a virtual piano.</p>
+        </header>
 
-      <TopMovers
-        tickers={tickers}
-        onAddTicker={(symbol) => {
-          if (!tickers.includes(symbol)) setTickers([...tickers, symbol]);
-        }}
-      />
+        <TopMovers
+          tickers={tickers}
+          onAddTicker={(symbol) => {
+            if (!tickers.includes(symbol)) setTickers([...tickers, symbol]);
+          }}
+        />
 
-      <section className="controls">
-        <TickerInput tickers={tickers} onChange={setTickers} colorForTrack={colorForTrack} />
-        <DateRangePicker
-          start={range.start}
-          end={range.end}
-          onChange={(start, end) => setRange({ start, end })}
-        />
-        <SonifyControls
-          scale={scale}
-          rootNote={rootNote}
-          notesPerBar={notesPerBar}
-          totalDuration={totalDuration}
-          onScaleChange={setScale}
-          onRootNoteChange={setRootNote}
-          onNotesPerBarChange={setNotesPerBar}
-          onTotalDurationChange={setTotalDuration}
-        />
-        <button
-          type="button"
-          className="generate-btn"
-          onClick={handleGenerate}
-          disabled={sonifyMutation.isPending || tickers.length === 0}
-        >
-          {sonifyMutation.isPending ? "Generating…" : "Generate"}
-        </button>
-        {sonifyMutation.isError && (
-          <p className="error">{(sonifyMutation.error as Error).message}</p>
+        <section className="controls">
+          <TickerInput 
+            tickers={tickers} 
+            onChange={setTickers} 
+            colorForTrack={resolveColor} 
+            onColorChange={handleColorChange} 
+            trackConfigs={trackConfigs}
+            onTrackConfigChange={handleTrackConfigChange}
+          />
+          <DateRangePicker
+            start={range.start}
+            end={range.end}
+            onChange={(start, end) => setRange({ start, end })}
+          />
+          <SonifyControls
+            scale={scale}
+            rootNote={rootNote}
+            notesPerBar={notesPerBar}
+            bpm={bpm}
+            totalDuration={totalDuration}
+            speedMode={speedMode}
+            globalInstrument={globalInstrument}
+            onScaleChange={setScale}
+            onRootNoteChange={setRootNote}
+            onNotesPerBarChange={setNotesPerBar}
+            onBpmChange={setBpm}
+            onTotalDurationChange={setTotalDuration}
+            onSpeedModeChange={setSpeedMode}
+            onGlobalInstrumentChange={setGlobalInstrument}
+          />
+          {sonifyMutation.isPending && <p className="status-text">Updating…</p>}
+          {sonifyMutation.isError && (
+            <p className="error">{(sonifyMutation.error as Error).message}</p>
+          )}
+        </section>
+      </aside>
+
+      <main className="main-content">
+        {!composition ? (
+          <div className="empty-state">
+            {tickers.length === 0 ? (
+              <>
+                <h2>Ready to make music</h2>
+                <p>Add some tickers on the left to get started.</p>
+              </>
+            ) : (
+              <>
+                <h2>Generating…</h2>
+                <p>Crunching the numbers for {tickers.join(", ")}.</p>
+              </>
+            )}
+          </div>
+        ) : (
+          <>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "var(--text)" }}>
+                <input 
+                  type="checkbox" 
+                  checked={showLabels} 
+                  onChange={(e) => setShowLabels(e.target.checked)} 
+                />
+                Show Keys
+              </label>
+            </div>
+            <PianoKeyboard
+              activeNotes={activeNotes}
+              trackColors={composition.tracks.map((t) => resolveColor(t.ticker, t.track))}
+              onPlayNote={handlePlayManualNote}
+              onStopNote={handleStopManualNote}
+              showLabels={showLabels}
+            />
+
+            <div className="chart-panels">
+              {composition.tracks.map((track) => (
+                <TickerChartPanel
+                  key={track.track}
+                  ticker={track.ticker}
+                  start={range.start}
+                  end={range.end}
+                  color={resolveColor(track.ticker, track.track)}
+                  notes={composition.notes.filter((n) => n.track === track.track)}
+                  notesPerBar={trackConfigs[track.ticker]?.notesPerBar || notesPerBar}
+                  currentTime={currentTime}
+                />
+              ))}
+            </div>
+          </>
         )}
-      </section>
+      </main>
 
       {composition && (
-        <>
+        <div className="bottom-bar">
           <TransportControls
             isPlaying={isPlaying}
             currentTime={currentTime}
@@ -233,27 +360,7 @@ export function HomePage() {
             onStopRecording={handleStopRecording}
             isRecordingAudio={isRecordingAudio}
           />
-
-          <PianoKeyboard
-            activeNotes={activeNotes}
-            trackColors={composition.tracks.map((t) => colorForTrack(t.track))}
-          />
-
-          <div className="chart-panels">
-            {composition.tracks.map((track) => (
-              <TickerChartPanel
-                key={track.track}
-                ticker={track.ticker}
-                start={range.start}
-                end={range.end}
-                color={colorForTrack(track.track)}
-                notes={composition.notes.filter((n) => n.track === track.track)}
-                notesPerBar={notesPerBar}
-                currentTime={currentTime}
-              />
-            ))}
-          </div>
-        </>
+        </div>
       )}
     </div>
   );

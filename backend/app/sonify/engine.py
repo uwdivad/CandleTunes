@@ -31,17 +31,30 @@ def sonify_track(
     df: pd.DataFrame,
     track_index: int,
     ticker: str,
-    total_duration_sec: float,
+    bpm: float | None,
+    total_duration_sec: float | None,
     notes_per_bar: int,
     scale: ScaleName,
     root_note: int,
     base_midi: int,
     pitch_range_semitones: int,
-) -> list[NoteEvent]:
+) -> tuple[list[NoteEvent], float]:
     scale_pitches = build_scale_pitches(root_note, scale.value, base_midi, pitch_range_semitones)
 
     close = df["Close"].to_numpy(dtype=float)
     n = len(close)
+    total_notes = n * notes_per_bar
+    
+    if bpm is not None:
+        seconds_per_note = 60.0 / bpm
+        track_duration = total_notes * seconds_per_note
+        note_slot = seconds_per_note
+    elif total_duration_sec is not None:
+        track_duration = total_duration_sec
+        note_slot = total_duration_sec / total_notes if total_notes > 0 else 60.0
+    else:
+        track_duration = 60.0
+        note_slot = 60.0 / total_notes if total_notes > 0 else 60.0
 
     if n < 2:
         mid_pitch = scale_pitches[len(scale_pitches) // 2]
@@ -49,12 +62,12 @@ def sonify_track(
             NoteEvent(
                 time_sec=0.0,
                 pitch_midi=mid_pitch,
-                duration_sec=total_duration_sec,
+                duration_sec=note_slot,
                 velocity=80,
                 track=track_index,
                 ticker=ticker,
             )
-        ]
+        ], note_slot
 
     open_ = df["Open"].to_numpy(dtype=float)
     high = df["High"].to_numpy(dtype=float)
@@ -66,9 +79,6 @@ def sonify_track(
     level_close = normalize_to_range(close)
     hl_range_pct = (high - low) / close
     velocity = compute_velocity(volume, hl_range_pct)
-
-    total_notes = n * notes_per_bar
-    note_slot = total_duration_sec / total_notes
 
     notes: list[NoteEvent] = []
 
@@ -114,7 +124,7 @@ def sonify_track(
                 )
             )
 
-    return notes
+    return notes, track_duration
 
 
 @log_call
@@ -131,14 +141,17 @@ def _maybe_resample(df: pd.DataFrame) -> pd.DataFrame:
 @log_call
 def sonify_composition(
     tracks: list[TrackRequest],
-    total_duration_sec: float,
+    bpm: float | None,
+    total_duration_sec: float | None,
     notes_per_bar: int,
     scale: ScaleName,
     root_note: int,
+    global_instrument: str | None,
     fetch_ohlcv: Callable[[str, str, str, str], pd.DataFrame],
 ) -> tuple[list[NoteEvent], list[TrackInfo]]:
     all_notes: list[NoteEvent] = []
     track_infos: list[TrackInfo] = []
+    max_duration_sec: float = 0.0
 
     for idx, track_req in enumerate(tracks):
         df = fetch_ohlcv(track_req.ticker, track_req.start, track_req.end, track_req.interval)
@@ -149,20 +162,27 @@ def sonify_composition(
             if track_req.register_base_midi is not None
             else register_for_track(idx)
         )
-        instrument = track_req.instrument or instrument_for_track(idx)
+        instrument = track_req.instrument or global_instrument or instrument_for_track(idx)
+        track_scale = track_req.scale if track_req.scale is not None else scale
+        track_root = track_req.root_note if track_req.root_note is not None else root_note
+        track_npb = track_req.notes_per_bar if track_req.notes_per_bar is not None else notes_per_bar
 
-        notes = sonify_track(
+        notes, track_duration = sonify_track(
             df,
             idx,
             track_req.ticker,
+            bpm,
             total_duration_sec,
-            notes_per_bar,
-            scale,
-            root_note,
+            track_npb,
+            track_scale,
+            track_root,
             base_midi,
             track_req.pitch_range_semitones,
         )
         all_notes.extend(notes)
+        if track_duration > max_duration_sec:
+            max_duration_sec = track_duration
+            
         track_infos.append(
             TrackInfo(
                 track=idx,
@@ -173,4 +193,4 @@ def sonify_composition(
             )
         )
 
-    return all_notes, track_infos
+    return all_notes, track_infos, max_duration_sec

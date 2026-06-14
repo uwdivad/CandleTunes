@@ -22,38 +22,38 @@ def _make_df(n: int, seed: int = 0) -> pd.DataFrame:
 
 def test_sonify_track_note_count_single_note_per_bar():
     df = _make_df(10)
-    notes = sonify_track(df, 0, "AAPL", 60.0, 1, ScaleName.major, 0, 60, 24)
+    notes, _ = sonify_track(df, 0, "AAPL", 60.0, None, 1, ScaleName.major, 0, 60, 24)
     assert len(notes) == 10
     assert notes[0].time_sec == 0.0
-    assert notes[-1].time_sec == pytest.approx(9 * (60.0 / 10))
+    assert notes[-1].time_sec == pytest.approx(9 * (60.0 / 60.0))
 
 
 def test_sonify_track_note_count_two_notes_per_bar():
     df = _make_df(10)
-    notes = sonify_track(df, 0, "AAPL", 60.0, 2, ScaleName.major, 0, 60, 24)
+    notes, _ = sonify_track(df, 0, "AAPL", 60.0, None, 2, ScaleName.major, 0, 60, 24)
     assert len(notes) == 20
 
 
 def test_sonify_track_pitches_in_scale():
     df = _make_df(50, seed=42)
     scale_pitches = set(build_scale_pitches(0, "major", 60, 24))
-    notes = sonify_track(df, 0, "AAPL", 60.0, 1, ScaleName.major, 0, 60, 24)
+    notes, _ = sonify_track(df, 0, "AAPL", 60.0, None, 1, ScaleName.major, 0, 60, 24)
     for note in notes:
         assert note.pitch_midi in scale_pitches
 
 
 def test_sonify_track_velocity_range():
     df = _make_df(50, seed=1)
-    notes = sonify_track(df, 0, "AAPL", 60.0, 1, ScaleName.major, 0, 60, 24)
+    notes, _ = sonify_track(df, 0, "AAPL", 60.0, None, 1, ScaleName.major, 0, 60, 24)
     for note in notes:
         assert 1 <= note.velocity <= 127
 
 
 def test_sonify_track_single_bar_edge_case():
     df = _make_df(1)
-    notes = sonify_track(df, 0, "AAPL", 60.0, 1, ScaleName.major, 0, 60, 24)
+    notes, _ = sonify_track(df, 0, "AAPL", 60.0, None, 1, ScaleName.major, 0, 60, 24)
     assert len(notes) == 1
-    assert notes[0].duration_sec == 60.0
+    assert notes[0].duration_sec == 1.0
     assert notes[0].velocity == 80
 
 
@@ -70,7 +70,7 @@ def test_sonify_track_flat_price_no_div_by_zero():
         },
         index=index,
     )
-    notes = sonify_track(df, 0, "FLAT", 60.0, 1, ScaleName.major, 0, 60, 24)
+    notes, _ = sonify_track(df, 0, "FLAT", 60.0, None, 1, ScaleName.major, 0, 60, 24)
     assert len(notes) == 10
     for note in notes:
         assert 1 <= note.velocity <= 127
@@ -87,8 +87,8 @@ def test_sonify_composition_multi_track_registers():
         TrackRequest(ticker="BTC-USD", start="2024-01-01", end="2024-02-01"),
     ]
 
-    notes, track_infos = sonify_composition(
-        tracks, 60.0, 1, ScaleName.major, 0, fake_fetch
+    notes, track_infos, max_dur = sonify_composition(
+        tracks, 60.0, None, 1, ScaleName.major, 0, None, fake_fetch
     )
 
     assert track_infos[0].track == 0

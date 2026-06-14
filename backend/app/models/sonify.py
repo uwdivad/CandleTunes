@@ -20,14 +20,19 @@ class TrackRequest(BaseModel):
     register_base_midi: int | None = None
     pitch_range_semitones: int = 24
     instrument: str | None = None
+    scale: ScaleName | None = None
+    root_note: int | None = Field(default=None, ge=0, le=11)
+    notes_per_bar: Literal[1, 2] | None = None
 
 
 class SonifyRequest(BaseModel):
     tracks: list[TrackRequest] = Field(min_length=1)
-    total_duration_sec: float = 60.0
+    bpm: float | None = None
+    total_duration_sec: float | None = None
     notes_per_bar: Literal[1, 2] = 1
     scale: ScaleName = ScaleName.major
     root_note: int = Field(default=0, ge=0, le=11)
+    global_instrument: str | None = None
 
 
 class NoteEvent(BaseModel):

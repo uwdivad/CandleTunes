@@ -28,14 +28,26 @@ export interface TrackRequest {
   register_base_midi?: number | null;
   pitch_range_semitones?: number;
   instrument?: string | null;
+  scale?: ScaleName | null;
+  root_note?: number | null;
+  notes_per_bar?: 1 | 2 | null;
+}
+
+export interface TrackConfig {
+  instrument?: string;
+  scale?: ScaleName;
+  rootNote?: number;
+  notesPerBar?: 1 | 2;
 }
 
 export interface SonifyRequest {
   tracks: TrackRequest[];
-  total_duration_sec: number;
+  bpm?: number;
+  total_duration_sec?: number;
   notes_per_bar: 1 | 2;
   scale: ScaleName;
   root_note: number;
+  global_instrument?: string | null;
 }
 
 export interface NoteEvent {
