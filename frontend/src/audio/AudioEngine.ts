@@ -29,13 +29,18 @@ export class AudioEngine {
   private part: Tone.Part<ScheduledNote> | null = null;
   private masterVolume: Tone.Volume = new Tone.Volume(0).toDestination();
   private recorder: Tone.Recorder = new Tone.Recorder();
+  private manualSynth: Tone.PolySynth;
 
   constructor() {
     this.masterVolume.connect(this.recorder);
+    this.manualSynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 0.6 },
+    }).connect(this.masterVolume);
   }
 
   async init(tracks: TrackInfo[]): Promise<void> {
-    this.dispose();
+    this.disposeAudioGraph();
 
     for (const track of tracks) {
       if (track.instrument === "piano") {
@@ -115,11 +120,26 @@ export class AudioEngine {
     return Tone.getTransport().seconds;
   }
 
-  dispose(): void {
+  playManualNote(pitchMidi: number, velocity: number = 80): void {
+    const freq = Tone.Frequency(pitchMidi, "midi").toFrequency();
+    this.manualSynth.triggerAttack(freq, undefined, velocity / 127);
+  }
+
+  stopManualNote(pitchMidi: number): void {
+    const freq = Tone.Frequency(pitchMidi, "midi").toFrequency();
+    this.manualSynth.triggerRelease(freq);
+  }
+
+  /** Tear down the current instruments/part without touching transport position. */
+  private disposeAudioGraph(): void {
     this.part?.dispose();
     this.part = null;
     this.instruments.forEach((instrument) => instrument.dispose());
     this.instruments.clear();
+  }
+
+  dispose(): void {
+    this.disposeAudioGraph();
     Tone.getTransport().stop();
     Tone.getTransport().seconds = 0;
   }

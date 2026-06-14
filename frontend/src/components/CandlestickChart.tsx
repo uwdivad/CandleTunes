@@ -116,7 +116,7 @@ export function CandlestickChart({ ticker, bars, noteTimes, currentTime, color }
       </div>
       <div className="candlestick-chart-container">
         <div ref={containerRef} />
-        <div ref={playheadRef} className="playhead-line" style={{ borderColor: color }} />
+        <div ref={playheadRef} className="playhead-line" style={{ borderColor: color, boxShadow: `0 0 12px ${color}` }} />
       </div>
     </div>
   );

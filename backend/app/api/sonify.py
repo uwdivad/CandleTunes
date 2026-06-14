@@ -12,17 +12,19 @@ router = APIRouter()
 @log_call
 def sonify(request: SonifyRequest) -> SonifyResponse:
     try:
-        notes, track_infos = sonify_composition(
+        notes, track_infos, max_duration_sec = sonify_composition(
             request.tracks,
+            request.bpm,
             request.total_duration_sec,
             request.notes_per_bar,
             request.scale,
             request.root_note,
+            request.global_instrument,
             fetch_ohlcv,
         )
     except ValueError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     return SonifyResponse(
-        notes=notes, tracks=track_infos, total_duration_sec=request.total_duration_sec
+        notes=notes, tracks=track_infos, total_duration_sec=max_duration_sec
     )

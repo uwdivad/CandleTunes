@@ -10,6 +10,7 @@ interface PlaybackState {
   setTotalDuration: (duration: number) => void;
   noteOn: (track: number, pitch: number) => void;
   noteOff: (track: number, pitch: number) => void;
+  clearActiveNotes: () => void;
   reset: () => void;
 }
 
@@ -37,6 +38,7 @@ export const usePlaybackStore = create<PlaybackState>((set) => ({
       next.set(track, set_);
       return { activeNotes: next };
     }),
+  clearActiveNotes: () => set({ activeNotes: new Map() }),
   reset: () =>
     set({ isPlaying: false, currentTime: 0, activeNotes: new Map() }),
 }));
