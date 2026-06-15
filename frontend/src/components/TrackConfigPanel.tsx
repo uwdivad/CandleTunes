@@ -1,6 +1,5 @@
 import { DEFAULT_TRACK_MIXER, type ChordMode, type ScaleName, type TrackConfig, type TrackMixerSettings } from "../api/types";
-import { CHORD_MODES, INSTRUMENTS, ROOT_NOTES } from "./SonifyControls";
-import { OCTAVES, SCALES } from "./trackOptions";
+import { CHORD_MODES, INSTRUMENTS, OCTAVES, ROOT_NOTES, SCALES } from "./trackOptions";
 
 interface TrackConfigPanelProps {
   config: TrackConfig;

@@ -270,13 +270,20 @@ export function HomePage() {
     const requestId = ++generationRequestRef.current;
 
     if (tickers.length === 0) {
+      // Tear down audio immediately; clear React state in the deferred callback
+      // below so we don't trigger a cascading render from inside the effect body.
       audioEngine.dispose();
       reset();
-      setComposition(null);
-      return;
     }
 
     const timer = setTimeout(async () => {
+      if (generationRequestRef.current !== requestId) return;
+
+      if (tickers.length === 0) {
+        setComposition(null);
+        return;
+      }
+
       try {
         const result = await sonifyMutation.mutateAsync({
           tracks: tickers.map((ticker) => ({

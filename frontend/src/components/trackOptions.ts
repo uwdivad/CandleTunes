@@ -1,3 +1,21 @@
+import type { ChordMode } from "../api/types";
+
+export const CHORD_MODES: { value: ChordMode; label: string }[] = [
+  { value: "off", label: "Off" },
+  { value: "triad", label: "Triad" },
+  { value: "power", label: "Power Chord" },
+];
+
+export const ROOT_NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+export const INSTRUMENTS = [
+  { value: "", label: "Auto (Default)" },
+  { value: "piano", label: "Piano" },
+  { value: "synth_triangle", label: "Synth Triangle" },
+  { value: "synth_sine", label: "Synth Sine" },
+  { value: "synth_sawtooth", label: "Synth Sawtooth" },
+];
+
 export const OCTAVES = [
   { value: "", label: "Auto" },
   { value: "36", label: "C2 (Very Low)" },

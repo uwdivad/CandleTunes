@@ -1,10 +1,5 @@
 import type { ChordMode, ScaleName } from "../api/types";
-
-export const CHORD_MODES: { value: ChordMode; label: string }[] = [
-  { value: "off", label: "Off" },
-  { value: "triad", label: "Triad" },
-  { value: "power", label: "Power Chord" },
-];
+import { CHORD_MODES, INSTRUMENTS, ROOT_NOTES } from "./trackOptions";
 
 const SCALES: { value: ScaleName; label: string }[] = [
   { value: "major", label: "Major" },
@@ -12,16 +7,6 @@ const SCALES: { value: ScaleName; label: string }[] = [
   { value: "pentatonic_major", label: "Pentatonic Major" },
   { value: "pentatonic_minor", label: "Pentatonic Minor" },
   { value: "chromatic", label: "Chromatic" },
-];
-
-export const ROOT_NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-
-export const INSTRUMENTS = [
-  { value: "", label: "Auto (Default)" },
-  { value: "piano", label: "Piano" },
-  { value: "synth_triangle", label: "Synth Triangle" },
-  { value: "synth_sine", label: "Synth Sine" },
-  { value: "synth_sawtooth", label: "Synth Sawtooth" },
 ];
 
 interface SonifyControlsProps {
