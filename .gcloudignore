@@ -1,0 +1,17 @@
+# What `gcloud builds submit` uploads as the build context. Keep all frontend/
+# and backend/ sources; drop everything the Dockerfile doesn't need.
+.git
+.gitignore
+**/.venv
+**/node_modules
+**/__pycache__
+**/*.pyc
+backend/cache
+frontend/dist
+frontend/.env
+.idea
+ai_history
+infra
+docs
+resources
+*.md

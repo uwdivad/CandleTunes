@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api import chart, midi, movers, sonify
 from app.config import settings
@@ -24,3 +25,9 @@ app.include_router(movers.router, prefix="/api")
 @log_call
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+# Serve the built frontend (present only in the container image). Mounted last so
+# the /api/* routes above take precedence; html=True serves index.html at "/".
+if settings.static_dir.is_dir():
+    app.mount("/", StaticFiles(directory=settings.static_dir, html=True), name="frontend")

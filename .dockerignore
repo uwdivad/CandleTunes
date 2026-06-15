@@ -1,0 +1,18 @@
+# Build context trimming for the Cloud Run image.
+.git
+.gitignore
+**/.venv
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+backend/cache
+frontend/dist
+# Force the Dockerfile's VITE_API_BASE_URL="" to win over the local dev .env.
+frontend/.env
+# Source copy of the meow sample; the served copy lives in frontend/public/.
+resources
+ai_history
+infra
+docs
+*.md

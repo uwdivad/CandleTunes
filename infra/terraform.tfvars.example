@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+project_id = "your-gcp-project-id"
+domain     = "candletunes.example.com"
+
+# Optional overrides (defaults shown):
+# region        = "us-central1"
+# service_name  = "candletunes"
+# repo_id       = "candletunes"
+# memory        = "512Mi"
+# max_instances = 2
+
+# Pass the image tag on the command line so each deploy is a fresh git SHA:
+#   terraform apply -var "image_tag=$(git rev-parse --short HEAD)"
