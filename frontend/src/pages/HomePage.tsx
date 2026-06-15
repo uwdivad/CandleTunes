@@ -4,6 +4,7 @@ import { useMidiExport, useSonify } from "../api/queries";
 import { DEFAULT_TRACK_MIXER, type ChordMode, type ScaleName, type SonifyResponse, type TrackConfig, type TrackMixerSettings } from "../api/types";
 import { AudioEngine, type ManualVoice } from "../audio/AudioEngine";
 import { colorForTrack } from "../audio/trackColors";
+import { MAX_TICKERS } from "../constants";
 import { DateRangePicker } from "../components/DateRangePicker";
 import { KeyboardSettings } from "../components/KeyboardSettings";
 import { PianoKeyboard } from "../components/PianoKeyboard";
@@ -428,7 +429,9 @@ export function HomePage() {
         <TopMovers
           tickers={tickers}
           onAddTicker={(symbol) => {
-            if (!tickers.includes(symbol)) setTickers([...tickers, symbol]);
+            if (!tickers.includes(symbol) && tickers.length < MAX_TICKERS) {
+              setTickers([...tickers, symbol]);
+            }
           }}
         />
 

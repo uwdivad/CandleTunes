@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DEFAULT_TRACK_MIXER, type TrackConfig, type TrackMixerSettings } from "../api/types";
+import { MAX_TICKERS } from "../constants";
 import { TrackConfigPanel } from "./TrackConfigPanel";
 
 interface TickerInputProps {
@@ -12,8 +13,6 @@ interface TickerInputProps {
   trackMixer: Record<string, TrackMixerSettings>;
   onTrackMixerChange: (ticker: string, settings: Partial<TrackMixerSettings>) => void;
 }
-
-const MAX_TICKERS = 6;
 
 export function TickerInput({ tickers, onChange, colorForTrack, onColorChange, trackConfigs, onTrackConfigChange, trackMixer, onTrackMixerChange }: TickerInputProps) {
   const [value, setValue] = useState("");
