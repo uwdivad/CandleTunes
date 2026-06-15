@@ -21,6 +21,9 @@ def sonify(request: SonifyRequest) -> SonifyResponse:
             request.root_note,
             request.global_instrument,
             fetch_ohlcv,
+            request.legato,
+            request.swing,
+            request.chord_mode,
         )
     except ValueError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { ScaleName, TrackConfig } from "../api/types";
-import { ROOT_NOTES } from "./SonifyControls";
+import { DEFAULT_TRACK_MIXER, type TrackConfig, type TrackMixerSettings } from "../api/types";
+import { TrackConfigPanel } from "./TrackConfigPanel";
 
 interface TickerInputProps {
   tickers: string[];
@@ -9,26 +9,11 @@ interface TickerInputProps {
   colorForTrack: (ticker: string, trackIndex: number) => string;
   trackConfigs: Record<string, TrackConfig>;
   onTrackConfigChange: (ticker: string, config: TrackConfig) => void;
+  trackMixer: Record<string, TrackMixerSettings>;
+  onTrackMixerChange: (ticker: string, settings: Partial<TrackMixerSettings>) => void;
 }
 
-const INSTRUMENTS = [
-  { value: "", label: "Auto (Default)" },
-  { value: "piano", label: "Piano" },
-  { value: "synth_triangle", label: "Synth Triangle" },
-  { value: "synth_sine", label: "Synth Sine" },
-  { value: "synth_sawtooth", label: "Synth Sawtooth" },
-];
-
-const SCALES = [
-  { value: "", label: "Global Default" },
-  { value: "major", label: "Major" },
-  { value: "minor", label: "Minor" },
-  { value: "pentatonic_major", label: "Pentatonic Major" },
-  { value: "pentatonic_minor", label: "Pentatonic Minor" },
-  { value: "chromatic", label: "Chromatic" },
-];
-
-export function TickerInput({ tickers, onChange, colorForTrack, onColorChange, trackConfigs, onTrackConfigChange }: TickerInputProps) {
+export function TickerInput({ tickers, onChange, colorForTrack, onColorChange, trackConfigs, onTrackConfigChange, trackMixer, onTrackMixerChange }: TickerInputProps) {
   const [value, setValue] = useState("");
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
 
@@ -95,59 +80,12 @@ export function TickerInput({ tickers, onChange, colorForTrack, onColorChange, t
             </div>
 
             {expandedTicker === t && (
-              <div className="track-config-panel">
-                <div className="track-config-field">
-                  <label>Instrument</label>
-                  <select 
-                    value={trackConfigs[t]?.instrument || ""} 
-                    onChange={(e) => updateConfig(t, { instrument: e.target.value || undefined })}
-                  >
-                    {INSTRUMENTS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="track-config-field">
-                  <label>Scale</label>
-                  <select 
-                    value={trackConfigs[t]?.scale || ""} 
-                    onChange={(e) => updateConfig(t, { scale: (e.target.value as ScaleName) || undefined })}
-                  >
-                    {SCALES.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="track-config-field">
-                  <label>Key</label>
-                  <select 
-                    value={trackConfigs[t]?.rootNote ?? ""} 
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      updateConfig(t, { rootNote: val ? parseInt(val, 10) : undefined });
-                    }}
-                  >
-                    <option value="">Global Default</option>
-                    {ROOT_NOTES.map((note, idx) => (
-                      <option key={idx} value={idx}>{note}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="track-config-field">
-                  <label>Tempo</label>
-                  <select 
-                    value={trackConfigs[t]?.notesPerBar || ""} 
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      updateConfig(t, { notesPerBar: val ? (parseInt(val, 10) as 1 | 2) : undefined });
-                    }}
-                  >
-                    <option value="">Global Default</option>
-                    <option value="1">1 Note / Bar</option>
-                    <option value="2">2 Notes / Bar</option>
-                  </select>
-                </div>
-              </div>
+              <TrackConfigPanel
+                config={trackConfigs[t] || {}}
+                mixer={trackMixer[t] || DEFAULT_TRACK_MIXER}
+                onConfigChange={(partial) => updateConfig(t, partial)}
+                onMixerChange={(partial) => onTrackMixerChange(t, partial)}
+              />
             )}
           </div>
         ))}

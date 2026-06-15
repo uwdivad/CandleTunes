@@ -57,7 +57,7 @@ export function useMidiExport() {
       const url = URL.createObjectURL(response.data as Blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "candlemusic.mid";
+      link.download = "candletunes.mid";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

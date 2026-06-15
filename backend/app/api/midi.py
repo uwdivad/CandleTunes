@@ -15,5 +15,5 @@ def export_midi(request: MidiExportRequest) -> Response:
     return Response(
         content=midi_bytes,
         media_type="audio/midi",
-        headers={"Content-Disposition": 'attachment; filename="candlemusic.mid"'},
+        headers={"Content-Disposition": 'attachment; filename="candletunes.mid"'},
     )

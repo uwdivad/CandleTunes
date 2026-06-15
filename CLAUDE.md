@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-CandleMusic turns stock/crypto OHLCV data into music ("sonification"). A FastAPI backend
+CandleTunes turns stock/crypto OHLCV data into music ("sonification"). A FastAPI backend
 fetches price history via `yfinance`, converts it into a list of MIDI-like `NoteEvent`s, and
 a React/TypeScript frontend plays those notes through Tone.js while rendering candlestick
 charts and a piano keyboard synced to playback.
@@ -96,7 +96,7 @@ see this.
   per-track config/colors, volume, recording state). A debounced effect
   (`GENERATION_DEBOUNCE_MS = 500`) re-POSTs `/api/sonify` whenever relevant state changes,
   then re-initializes the `AudioEngine` and schedules the returned notes. Selected
-  tickers persist to `localStorage` (`candlemusic.tickers`).
+  tickers persist to `localStorage` (`candletunes.tickers`, migrated from `candlemusic.tickers`).
 - **`audio/AudioEngine.ts`** — wraps Tone.js. Builds one instrument per track (a
   `Tone.Sampler` with Salamander piano samples for `instrument === "piano"`, otherwise a
   `Tone.PolySynth` with an oscillator type from `SYNTH_OSCILLATORS`), all routed through a

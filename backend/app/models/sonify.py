@@ -12,6 +12,9 @@ class ScaleName(str, Enum):
     chromatic = "chromatic"
 
 
+ChordMode = Literal["off", "triad", "power"]
+
+
 class TrackRequest(BaseModel):
     ticker: str
     start: str
@@ -23,6 +26,7 @@ class TrackRequest(BaseModel):
     scale: ScaleName | None = None
     root_note: int | None = Field(default=None, ge=0, le=11)
     notes_per_bar: Literal[1, 2] | None = None
+    chord_mode: ChordMode | None = None
 
 
 class SonifyRequest(BaseModel):
@@ -33,6 +37,9 @@ class SonifyRequest(BaseModel):
     scale: ScaleName = ScaleName.major
     root_note: int = Field(default=0, ge=0, le=11)
     global_instrument: str | None = None
+    legato: float = Field(default=0.9, ge=0.1, le=1.0)
+    swing: float = Field(default=0.0, ge=0.0, le=0.5)
+    chord_mode: ChordMode = "off"
 
 
 class NoteEvent(BaseModel):

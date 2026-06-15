@@ -5,7 +5,7 @@ from app.api import chart, midi, movers, sonify
 from app.config import settings
 from app.logging_config import log_call
 
-app = FastAPI(title="CandleMusic API")
+app = FastAPI(title="CandleTunes API")
 
 app.add_middleware(
     CORSMiddleware,

@@ -325,6 +325,18 @@ input[type="range"] {
   width: 90px;
 }
 
+.loop-btn {
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.loop-btn.active {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .recording-btn {
   border-color: #ef5350;
   color: #ef5350;
@@ -332,6 +344,61 @@ input[type="range"] {
 
 .recording-btn:hover {
   border-color: #ef5350;
+}
+
+/* Keyboard settings bar */
+.keyboard-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  margin: 0 auto 12px;
+  padding: 10px 14px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.keyboard-settings .volume-field {
+  min-width: 120px;
+  flex: 1;
+  max-width: 200px;
+}
+
+.octave-stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.octave-stepper button {
+  width: 28px;
+  padding: 4px 0;
+  text-align: center;
+  line-height: 1;
+}
+
+.octave-value {
+  min-width: 28px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.toggle-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px rgba(79, 157, 222, 0.4);
+}
+
+.toggle-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 /* Piano */
@@ -474,6 +541,9 @@ input[type="range"] {
 
 .candlestick-chart-header {
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .ticker-label {
@@ -486,8 +556,61 @@ input[type="range"] {
   font-family: ui-monospace, Consolas, monospace;
 }
 
+.track-mixer-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.track-mixer-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.track-mixer-btn.active.track-mute-btn {
+  background: var(--loss);
+  border-color: var(--loss);
+  color: #fff;
+}
+
+.track-mixer-btn.active.track-solo-btn {
+  background: var(--gain);
+  border-color: var(--gain);
+  color: #fff;
+}
+
+.track-mixer-btn.track-settings-btn {
+  font-size: 12px;
+}
+
+.track-mixer-btn.active.track-settings-btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.track-mixer-btn.track-independent-btn {
+  font-size: 12px;
+}
+
+.track-mixer-btn.active.track-independent-btn {
+  background: #9b5de5;
+  border-color: #9b5de5;
+  color: #fff;
+}
+
 .candlestick-chart-container {
   position: relative;
+  cursor: pointer;
+  touch-action: none;
 }
 
 .playhead-line {

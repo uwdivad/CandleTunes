@@ -49,6 +49,56 @@ def test_sonify_track_velocity_range():
         assert 1 <= note.velocity <= 127
 
 
+def test_sonify_track_custom_legato():
+    df = _make_df(10)
+    notes, _ = sonify_track(df, 0, "AAPL", 60.0, None, 1, ScaleName.major, 0, 60, 24, legato=0.5)
+    note_slot = 60.0 / 60.0
+    for note in notes:
+        assert note.duration_sec == pytest.approx(note_slot * 0.5)
+
+
+def test_sonify_track_swing_shifts_offbeat_notes():
+    df = _make_df(10)
+    notes, _ = sonify_track(df, 0, "AAPL", 60.0, None, 2, ScaleName.major, 0, 60, 24, legato=1.0, swing=0.2)
+    note_slot = 60.0 / 60.0
+    half = note_slot / 2
+    swing_offset = half * 0.2
+
+    onbeat = notes[0]
+    offbeat = notes[1]
+    assert onbeat.time_sec == pytest.approx(0.0)
+    assert offbeat.time_sec == pytest.approx(half + swing_offset)
+    assert offbeat.duration_sec == pytest.approx((half - swing_offset) * 1.0)
+    # offbeat note should not overlap into the next bar
+    assert offbeat.time_sec + offbeat.duration_sec <= note_slot + 1e-9
+
+
+@pytest.mark.parametrize("chord_mode,extra_notes_per_note", [("off", 0), ("power", 1), ("triad", 2)])
+def test_sonify_track_chord_mode_adds_chord_tones(chord_mode, extra_notes_per_note):
+    df = _make_df(10)
+    scale_pitches = set(build_scale_pitches(0, "major", 60, 24))
+    notes, _ = sonify_track(df, 0, "AAPL", 60.0, None, 1, ScaleName.major, 0, 60, 24, chord_mode=chord_mode)
+
+    assert len(notes) == 10 * (1 + extra_notes_per_note)
+    for note in notes:
+        assert note.pitch_midi in scale_pitches
+
+
+def test_sonify_track_chord_tones_have_reduced_velocity():
+    df = _make_df(10)
+    notes, _ = sonify_track(df, 0, "AAPL", 60.0, None, 1, ScaleName.major, 0, 60, 24, chord_mode="triad")
+
+    # group notes by time_sec: melody note first, then its chord tones
+    by_time: dict[float, list] = {}
+    for note in notes:
+        by_time.setdefault(note.time_sec, []).append(note)
+
+    for grouped in by_time.values():
+        melody, *chord_tones = grouped
+        for chord_note in chord_tones:
+            assert chord_note.velocity == int(melody.velocity * 0.8)
+
+
 def test_sonify_track_single_bar_edge_case():
     df = _make_df(1)
     notes, _ = sonify_track(df, 0, "AAPL", 60.0, None, 1, ScaleName.major, 0, 60, 24)

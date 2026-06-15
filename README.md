@@ -1,6 +1,6 @@
-# CandleMusic 🕯️🎶
+# CandleTunes 🕯️🎶
 
-> **Hear what the market is doing.** CandleMusic turns stock and crypto price history into
+> **Turn market movement into tunes.** CandleTunes transforms stock and crypto price history into
 > living, multi-track music.
 
 ![Python](https://img.shields.io/badge/Python-FastAPI-3776AB?logo=python&logoColor=white)
@@ -8,7 +8,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Feed it a few tickers and CandleMusic fetches their OHLCV data, maps it onto a musical
+Feed it a few tickers and CandleTunes fetches their OHLCV data, maps it onto a musical
 scale, and plays it back as a composition that's locked in sync with live candlestick
 charts and an on-screen piano. Every ticker becomes its own **voice**: price picks the
 notes, volume and volatility shape how hard they're struck, and you stay in control of the
@@ -147,7 +147,7 @@ See `backend/app/models/sonify.py` for the full request/response schema.
 ## 🗂️ Project structure
 
 ```
-CandleMusic/
+CandleTunes/
 ├── backend/app/
 │   ├── api/       # FastAPI routers: sonify, chart, midi, movers
 │   ├── models/    # Pydantic request/response schemas

@@ -12,6 +12,12 @@ interface TransportControlsProps {
   audioDownloadDisabled: boolean;
   onStopRecording: () => void;
   isRecordingAudio: boolean;
+  isLooping: boolean;
+  onToggleLoop: () => void;
+  reverb: number;
+  onReverbChange: (reverb: number) => void;
+  delay: number;
+  onDelayChange: (delay: number) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -34,11 +40,28 @@ export function TransportControls({
   audioDownloadDisabled,
   onStopRecording,
   isRecordingAudio,
+  isLooping,
+  onToggleLoop,
+  reverb,
+  onReverbChange,
+  delay,
+  onDelayChange,
 }: TransportControlsProps) {
   return (
     <div className="transport-controls">
       <button type="button" className="play-pause-btn" onClick={onPlayPause} disabled={isRecordingAudio}>
         {isPlaying ? "Pause" : "Play"}
+      </button>
+
+      <button
+        type="button"
+        className={`loop-btn ${isLooping ? "active" : ""}`}
+        onClick={onToggleLoop}
+        disabled={isRecordingAudio}
+        aria-pressed={isLooping}
+        title="Loop playback"
+      >
+        🔁
       </button>
 
       <span className="time-label">{formatTime(currentTime)}</span>
@@ -67,6 +90,34 @@ export function TransportControls({
           onChange={(e) => onVolumeChange(Number(e.target.value))}
           className="volume-bar"
           aria-label="Volume"
+        />
+      </div>
+
+      <div className="volume-control" title="Reverb">
+        <span className="volume-icon" aria-hidden="true">🌊</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={reverb}
+          onChange={(e) => onReverbChange(Number(e.target.value))}
+          className="volume-bar"
+          aria-label="Reverb"
+        />
+      </div>
+
+      <div className="volume-control" title="Delay">
+        <span className="volume-icon" aria-hidden="true">🔂</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={delay}
+          onChange={(e) => onDelayChange(Number(e.target.value))}
+          className="volume-bar"
+          aria-label="Delay"
         />
       </div>
 

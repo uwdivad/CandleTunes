@@ -3,8 +3,14 @@ from typing import Callable
 import pandas as pd
 
 from app.logging_config import log_call
-from app.models.sonify import NoteEvent, ScaleName, TrackInfo, TrackRequest
-from app.sonify.pitch import compute_log_returns, normalize_to_range, quantize_pitch, robust_zscore_clip
+from app.models.sonify import ChordMode, NoteEvent, ScaleName, TrackInfo, TrackRequest
+from app.sonify.pitch import (
+    chord_tone_pitches,
+    compute_log_returns,
+    normalize_to_range,
+    quantize_pitch_index,
+    robust_zscore_clip,
+)
 from app.sonify.scales import build_scale_pitches
 from app.sonify.velocity import compute_velocity
 
@@ -26,6 +32,29 @@ def instrument_for_track(track_index: int) -> str:
     return SYNTH_INSTRUMENTS[(track_index - 1) % len(SYNTH_INSTRUMENTS)]
 
 
+def _chord_notes(
+    idx: int,
+    scale_pitches: list[int],
+    chord_mode: ChordMode,
+    time_sec: float,
+    duration_sec: float,
+    velocity: int,
+    track_index: int,
+    ticker: str,
+) -> list[NoteEvent]:
+    return [
+        NoteEvent(
+            time_sec=time_sec,
+            pitch_midi=chord_pitch,
+            duration_sec=duration_sec,
+            velocity=int(velocity * 0.8),
+            track=track_index,
+            ticker=ticker,
+        )
+        for chord_pitch in chord_tone_pitches(idx, scale_pitches, chord_mode)
+    ]
+
+
 @log_call
 def sonify_track(
     df: pd.DataFrame,
@@ -38,6 +67,9 @@ def sonify_track(
     root_note: int,
     base_midi: int,
     pitch_range_semitones: int,
+    legato: float = LEGATO,
+    swing: float = 0.0,
+    chord_mode: ChordMode = "off",
 ) -> tuple[list[NoteEvent], float]:
     scale_pitches = build_scale_pitches(root_note, scale.value, base_midi, pitch_range_semitones)
 
@@ -57,8 +89,9 @@ def sonify_track(
         note_slot = 60.0 / total_notes if total_notes > 0 else 60.0
 
     if n < 2:
-        mid_pitch = scale_pitches[len(scale_pitches) // 2]
-        return [
+        mid_idx = len(scale_pitches) // 2
+        mid_pitch = scale_pitches[mid_idx]
+        notes = [
             NoteEvent(
                 time_sec=0.0,
                 pitch_midi=mid_pitch,
@@ -67,7 +100,9 @@ def sonify_track(
                 track=track_index,
                 ticker=ticker,
             )
-        ], note_slot
+        ]
+        notes.extend(_chord_notes(mid_idx, scale_pitches, chord_mode, 0.0, note_slot, 80, track_index, ticker))
+        return notes, note_slot
 
     open_ = df["Open"].to_numpy(dtype=float)
     high = df["High"].to_numpy(dtype=float)
@@ -86,43 +121,51 @@ def sonify_track(
         price_min, price_max = float(close.min()), float(close.max())
         level_open = normalize_to_range(open_, price_min, price_max)
         half = note_slot / 2
+        swing_offset = half * swing
         for i in range(n):
             t0 = i * note_slot
-            pitch_a = quantize_pitch(level_open[i], z_clipped[i], scale_pitches)
-            pitch_b = quantize_pitch(level_close[i], z_clipped[i], scale_pitches)
+            idx_a = quantize_pitch_index(level_open[i], z_clipped[i], scale_pitches)
+            idx_b = quantize_pitch_index(level_close[i], z_clipped[i], scale_pitches)
+            dur_a = half * legato
+            dur_b = (half - swing_offset) * legato
             notes.append(
                 NoteEvent(
                     time_sec=t0,
-                    pitch_midi=pitch_a,
-                    duration_sec=half * LEGATO,
+                    pitch_midi=scale_pitches[idx_a],
+                    duration_sec=dur_a,
                     velocity=int(velocity[i]),
                     track=track_index,
                     ticker=ticker,
                 )
             )
+            notes.extend(_chord_notes(idx_a, scale_pitches, chord_mode, t0, dur_a, int(velocity[i]), track_index, ticker))
             notes.append(
                 NoteEvent(
-                    time_sec=t0 + half,
-                    pitch_midi=pitch_b,
-                    duration_sec=half * LEGATO,
+                    time_sec=t0 + half + swing_offset,
+                    pitch_midi=scale_pitches[idx_b],
+                    duration_sec=dur_b,
                     velocity=int(velocity[i]),
                     track=track_index,
                     ticker=ticker,
                 )
             )
+            notes.extend(_chord_notes(idx_b, scale_pitches, chord_mode, t0 + half + swing_offset, dur_b, int(velocity[i]), track_index, ticker))
     else:
         for i in range(n):
-            pitch = quantize_pitch(level_close[i], z_clipped[i], scale_pitches)
+            idx = quantize_pitch_index(level_close[i], z_clipped[i], scale_pitches)
+            t0 = i * note_slot
+            duration = note_slot * legato
             notes.append(
                 NoteEvent(
-                    time_sec=i * note_slot,
-                    pitch_midi=pitch,
-                    duration_sec=note_slot * LEGATO,
+                    time_sec=t0,
+                    pitch_midi=scale_pitches[idx],
+                    duration_sec=duration,
                     velocity=int(velocity[i]),
                     track=track_index,
                     ticker=ticker,
                 )
             )
+            notes.extend(_chord_notes(idx, scale_pitches, chord_mode, t0, duration, int(velocity[i]), track_index, ticker))
 
     return notes, track_duration
 
@@ -148,6 +191,9 @@ def sonify_composition(
     root_note: int,
     global_instrument: str | None,
     fetch_ohlcv: Callable[[str, str, str, str], pd.DataFrame],
+    legato: float = LEGATO,
+    swing: float = 0.0,
+    chord_mode: ChordMode = "off",
 ) -> tuple[list[NoteEvent], list[TrackInfo]]:
     all_notes: list[NoteEvent] = []
     track_infos: list[TrackInfo] = []
@@ -166,6 +212,7 @@ def sonify_composition(
         track_scale = track_req.scale if track_req.scale is not None else scale
         track_root = track_req.root_note if track_req.root_note is not None else root_note
         track_npb = track_req.notes_per_bar if track_req.notes_per_bar is not None else notes_per_bar
+        track_chord_mode = track_req.chord_mode if track_req.chord_mode is not None else chord_mode
 
         notes, track_duration = sonify_track(
             df,
@@ -178,6 +225,9 @@ def sonify_composition(
             track_root,
             base_midi,
             track_req.pitch_range_semitones,
+            legato,
+            swing,
+            track_chord_mode,
         )
         all_notes.extend(notes)
         if track_duration > max_duration_sec:

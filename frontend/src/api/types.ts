@@ -20,6 +20,8 @@ export type ScaleName =
   | "pentatonic_minor"
   | "chromatic";
 
+export type ChordMode = "off" | "triad" | "power";
+
 export interface TrackRequest {
   ticker: string;
   start: string;
@@ -31,6 +33,7 @@ export interface TrackRequest {
   scale?: ScaleName | null;
   root_note?: number | null;
   notes_per_bar?: 1 | 2 | null;
+  chord_mode?: ChordMode | null;
 }
 
 export interface TrackConfig {
@@ -38,7 +41,23 @@ export interface TrackConfig {
   scale?: ScaleName;
   rootNote?: number;
   notesPerBar?: 1 | 2;
+  registerBaseMidi?: number;
+  chordMode?: ChordMode;
 }
+
+export interface TrackMixerSettings {
+  volume: number;
+  pan: number;
+  mute: boolean;
+  solo: boolean;
+}
+
+export const DEFAULT_TRACK_MIXER: TrackMixerSettings = {
+  volume: 100,
+  pan: 0,
+  mute: false,
+  solo: false,
+};
 
 export interface SonifyRequest {
   tracks: TrackRequest[];
@@ -48,6 +67,9 @@ export interface SonifyRequest {
   scale: ScaleName;
   root_note: number;
   global_instrument?: string | null;
+  legato?: number;
+  swing?: number;
+  chord_mode?: ChordMode;
 }
 
 export interface NoteEvent {

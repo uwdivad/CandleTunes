@@ -15,6 +15,8 @@ interface PianoKeyboardProps {
   onPlayNote: (midi: number) => void;
   onStopNote: (midi: number) => void;
   showLabels: boolean;
+  /** Keys pressed via the computer keyboard, highlighted like mouse presses. */
+  externalPressed?: Set<number>;
 }
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -24,14 +26,17 @@ function getNoteLabel(midi: number): string {
   return `${name}${octave}`;
 }
 
-export function PianoKeyboard({ 
-  activeNotes, 
-  trackColors, 
-  onPlayNote, 
-  onStopNote, 
-  showLabels 
+export function PianoKeyboard({
+  activeNotes,
+  trackColors,
+  onPlayNote,
+  onStopNote,
+  showLabels,
+  externalPressed,
 }: PianoKeyboardProps) {
   const [playingKeys, setPlayingKeys] = useState<Set<number>>(new Set());
+
+  const isPressed = (midi: number) => playingKeys.has(midi) || (externalPressed?.has(midi) ?? false);
 
   const handlePointerDown = (e: React.PointerEvent, midi: number) => {
     e.preventDefault();
@@ -80,7 +85,7 @@ export function PianoKeyboard({
   }
 
   function fillFor(midi: number, defaultFill: string): string {
-    if (playingKeys.has(midi)) return "var(--accent)";
+    if (isPressed(midi)) return "var(--accent)";
     const tracks = activeTracksFor(midi);
     if (tracks.length === 0) return defaultFill;
     if (tracks.length === 1) return trackColors[tracks[0] % trackColors.length];
@@ -88,7 +93,7 @@ export function PianoKeyboard({
   }
 
   function glowStyleFor(midi: number) {
-    if (playingKeys.has(midi)) return { filter: `drop-shadow(0px 0px 8px var(--accent))` };
+    if (isPressed(midi)) return { filter: `drop-shadow(0px 0px 8px var(--accent))` };
     const tracks = activeTracksFor(midi);
     if (tracks.length === 0) return {};
     const color = trackColors[tracks[0] % trackColors.length];

@@ -1,4 +1,10 @@
-import type { ScaleName } from "../api/types";
+import type { ChordMode, ScaleName } from "../api/types";
+
+export const CHORD_MODES: { value: ChordMode; label: string }[] = [
+  { value: "off", label: "Off" },
+  { value: "triad", label: "Triad" },
+  { value: "power", label: "Power Chord" },
+];
 
 const SCALES: { value: ScaleName; label: string }[] = [
   { value: "major", label: "Major" },
@@ -26,6 +32,9 @@ interface SonifyControlsProps {
   totalDuration: number;
   speedMode: 'bpm' | 'duration';
   globalInstrument: string;
+  legato: number;
+  swing: number;
+  chordMode: ChordMode;
   onScaleChange: (scale: ScaleName) => void;
   onRootNoteChange: (rootNote: number) => void;
   onNotesPerBarChange: (notesPerBar: 1 | 2) => void;
@@ -33,6 +42,9 @@ interface SonifyControlsProps {
   onTotalDurationChange: (duration: number) => void;
   onSpeedModeChange: (mode: 'bpm' | 'duration') => void;
   onGlobalInstrumentChange: (inst: string) => void;
+  onLegatoChange: (legato: number) => void;
+  onSwingChange: (swing: number) => void;
+  onChordModeChange: (chordMode: ChordMode) => void;
 }
 
 export function SonifyControls({
@@ -43,6 +55,9 @@ export function SonifyControls({
   totalDuration,
   speedMode,
   globalInstrument,
+  legato,
+  swing,
+  chordMode,
   onScaleChange,
   onRootNoteChange,
   onNotesPerBarChange,
@@ -50,6 +65,9 @@ export function SonifyControls({
   onTotalDurationChange,
   onSpeedModeChange,
   onGlobalInstrumentChange,
+  onLegatoChange,
+  onSwingChange,
+  onChordModeChange,
 }: SonifyControlsProps) {
   return (
     <div className="field-group sonify-controls">
@@ -87,6 +105,15 @@ export function SonifyControls({
             <option value={2}>2</option>
           </select>
         </label>
+
+        <label className="inline-field">
+          Harmony
+          <select value={chordMode} onChange={(e) => onChordModeChange(e.target.value as ChordMode)}>
+            {CHORD_MODES.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <label className="inline-field" style={{ marginBottom: '8px' }}>
@@ -116,6 +143,32 @@ export function SonifyControls({
           Target Duration
         </button>
       </div>
+
+      <label className="inline-field duration-field">
+        Articulation: {legato.toFixed(2)} {legato <= 0.4 ? "(Staccato)" : legato >= 0.95 ? "(Legato)" : ""}
+        <input
+          type="range"
+          min={0.1}
+          max={1}
+          step={0.05}
+          value={legato}
+          onChange={(e) => onLegatoChange(Number(e.target.value))}
+        />
+      </label>
+
+      {notesPerBar === 2 && (
+        <label className="inline-field duration-field">
+          Swing: {Math.round(swing * 200)}%
+          <input
+            type="range"
+            min={0}
+            max={0.5}
+            step={0.05}
+            value={swing}
+            onChange={(e) => onSwingChange(Number(e.target.value))}
+          />
+        </label>
+      )}
 
       {speedMode === 'bpm' ? (
         <label className="inline-field duration-field">

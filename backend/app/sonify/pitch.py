@@ -38,12 +38,27 @@ def normalize_to_range(
 
 
 @log_call
-def quantize_pitch(level: float, z_clipped: float, scale_pitches: list[int]) -> int:
+def quantize_pitch_index(level: float, z_clipped: float, scale_pitches: list[int]) -> int:
     """Combine chart-level position (70%) and return-direction (30%) into a single
-    [0,1] signal, then quantize to the nearest pitch in `scale_pitches`."""
+    [0,1] signal, then quantize to the nearest index in `scale_pitches`."""
     combined = 0.7 * level + 0.3 * ((z_clipped + 1) / 2)
     combined = min(max(combined, 0.0), 1.0)
     m = len(scale_pitches)
     idx = round(combined * (m - 1))
-    idx = min(max(idx, 0), m - 1)
-    return scale_pitches[idx]
+    return min(max(idx, 0), m - 1)
+
+
+@log_call
+def chord_tone_pitches(idx: int, scale_pitches: list[int], chord_mode: str) -> list[int]:
+    """Return additional chord-tone pitches for `chord_mode`, as scale-degree offsets
+    from `idx` (a third = +2 scale steps, a fifth = +4 scale steps), clamped to the
+    bounds of `scale_pitches`."""
+    if chord_mode == "triad":
+        offsets = [2, 4]
+    elif chord_mode == "power":
+        offsets = [4]
+    else:
+        offsets = []
+
+    m = len(scale_pitches)
+    return [scale_pitches[min(idx + offset, m - 1)] for offset in offsets]
