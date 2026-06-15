@@ -11,7 +11,7 @@ export const ROOT_NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A",
 export const INSTRUMENTS = [
   { value: "", label: "Auto (Default)" },
   { value: "piano", label: "Piano" },
-  { value: "meow", label: "Meow 🐱" },
+  // { value: "meow", label: "Meow 🐱" },  // hidden for now — engine support stays in AudioEngine
   { value: "synth_triangle", label: "Synth Triangle" },
   { value: "synth_sine", label: "Synth Sine" },
   { value: "synth_sawtooth", label: "Synth Sawtooth" },

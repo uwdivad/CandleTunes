@@ -2,7 +2,7 @@ import type { ManualVoice } from "../audio/AudioEngine";
 
 const MANUAL_VOICES: { value: ManualVoice; label: string }[] = [
   { value: "piano", label: "Grand Piano" },
-  { value: "meow", label: "Meow 🐱" },
+  // { value: "meow", label: "Meow 🐱" },  // hidden for now — engine support stays in AudioEngine
   { value: "synth_triangle", label: "Synth Triangle" },
   { value: "synth_sine", label: "Synth Sine" },
   { value: "synth_sawtooth", label: "Synth Saw" },

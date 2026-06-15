@@ -13,9 +13,13 @@ interface TickerInputProps {
   onTrackMixerChange: (ticker: string, settings: Partial<TrackMixerSettings>) => void;
 }
 
+const MAX_TICKERS = 6;
+
 export function TickerInput({ tickers, onChange, colorForTrack, onColorChange, trackConfigs, onTrackConfigChange, trackMixer, onTrackMixerChange }: TickerInputProps) {
   const [value, setValue] = useState("");
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
+
+  const atLimit = tickers.length >= MAX_TICKERS;
 
   const addTicker = () => {
     const parts = value
@@ -27,6 +31,7 @@ export function TickerInput({ tickers, onChange, colorForTrack, onColorChange, t
 
     const next = [...tickers];
     for (const t of parts) {
+      if (next.length >= MAX_TICKERS) break;
       if (!next.includes(t)) next.push(t);
     }
     onChange(next);
@@ -105,12 +110,16 @@ export function TickerInput({ tickers, onChange, colorForTrack, onColorChange, t
               addTicker();
             }
           }}
-          placeholder="e.g. AAPL, BTC-USD, EURUSD=X"
+          placeholder={atLimit ? `Limit of ${MAX_TICKERS} tickers reached` : "e.g. AAPL, BTC-USD, EURUSD=X"}
+          disabled={atLimit}
         />
-        <button type="button" onClick={addTicker}>
+        <button type="button" onClick={addTicker} disabled={atLimit}>
           Add
         </button>
       </div>
+      {atLimit && (
+        <p className="field-hint">Maximum of {MAX_TICKERS} tickers reached. Remove one to add another.</p>
+      )}
     </div>
   );
 }
