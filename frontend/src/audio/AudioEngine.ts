@@ -9,6 +9,7 @@ type SimpleOscillatorType = "sine" | "triangle" | "sawtooth" | "square";
 /** Voices the interactive (top) piano can play. */
 export type ManualVoice =
   | "piano"
+  | "meow"
   | "synth_triangle"
   | "synth_sine"
   | "synth_sawtooth"
@@ -23,6 +24,8 @@ const SYNTH_OSCILLATORS: Record<string, SimpleOscillatorType> = {
   synth_square: "square",
 };
 
+const SALAMANDER_BASE_URL = "https://tonejs.github.io/audio/salamander/";
+
 const PIANO_SAMPLE_URLS: Record<string, string> = {
   A0: "A0.mp3", C1: "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3", A1: "A1.mp3",
   C2: "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3", A2: "A2.mp3",
@@ -32,6 +35,11 @@ const PIANO_SAMPLE_URLS: Record<string, string> = {
   C6: "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3", A6: "A6.mp3",
   C7: "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", A7: "A7.mp3", C8: "C8.mp3",
 };
+
+// Single-sample "meow" instrument: one recording anchored at C4, which the
+// Sampler pitch-shifts across the keyboard. Served from frontend/public/sounds/.
+const MEOW_BASE_URL = "/sounds/";
+const MEOW_SAMPLE_URLS: Record<string, string> = { C4: "miao.mp3" };
 
 export class AudioEngine {
   private instruments: Map<number, Instrument> = new Map();
@@ -66,22 +74,30 @@ export class AudioEngine {
     this.masterVolume.chain(this.reverb, this.delay, Tone.getDestination());
     this.delay.connect(this.recorder);
     this.manualVolume.connect(this.masterVolume);
-    this.manualInstrument = this.buildManualInstrument(this.manualVoice);
+    this.manualInstrument = this.buildInstrument(this.manualVoice, this.manualVolume);
   }
 
-  private buildManualInstrument(voice: ManualVoice): Instrument {
-    if (voice === "piano") {
+  /** Build an instrument (sampler or synth) for the given name, routed to `destination`. */
+  private buildInstrument(name: string, destination: Tone.ToneAudioNode): Instrument {
+    if (name === "piano") {
       return new Tone.Sampler({
         urls: PIANO_SAMPLE_URLS,
         release: 1,
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
-      }).connect(this.manualVolume);
+        baseUrl: SALAMANDER_BASE_URL,
+      }).connect(destination);
     }
-    const oscType = SYNTH_OSCILLATORS[voice] ?? "triangle";
+    if (name === "meow") {
+      return new Tone.Sampler({
+        urls: MEOW_SAMPLE_URLS,
+        release: 1,
+        baseUrl: MEOW_BASE_URL,
+      }).connect(destination);
+    }
+    const oscType = SYNTH_OSCILLATORS[name] ?? "triangle";
     return new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: oscType },
       envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 0.6 },
-    }).connect(this.manualVolume);
+    }).connect(destination);
   }
 
   async init(tracks: TrackInfo[]): Promise<void> {
@@ -91,21 +107,7 @@ export class AudioEngine {
       const channel = new Tone.Channel().connect(this.masterVolume);
       this.channels.set(track.track, channel);
 
-      if (track.instrument === "piano") {
-        const sampler = new Tone.Sampler({
-          urls: PIANO_SAMPLE_URLS,
-          release: 1,
-          baseUrl: "https://tonejs.github.io/audio/salamander/",
-        }).connect(channel);
-        this.instruments.set(track.track, sampler);
-      } else {
-        const oscType = SYNTH_OSCILLATORS[track.instrument] ?? "triangle";
-        const synth = new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: oscType },
-          envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 0.6 },
-        }).connect(channel);
-        this.instruments.set(track.track, synth);
-      }
+      this.instruments.set(track.track, this.buildInstrument(track.instrument, channel));
     }
 
     await Promise.all([Tone.loaded(), this.reverb.ready]);
@@ -308,7 +310,7 @@ export class AudioEngine {
     this.manualInstrument.dispose();
     this.manualActive.clear();
     this.manualSustained.clear();
-    this.manualInstrument = this.buildManualInstrument(voice);
+    this.manualInstrument = this.buildInstrument(voice, this.manualVolume);
   }
 
   setManualVolume(percent: number): void {

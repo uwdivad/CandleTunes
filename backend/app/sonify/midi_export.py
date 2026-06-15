@@ -10,6 +10,7 @@ GM_PROGRAM_MAP: dict[str, int] = {
     "synth_triangle": 80,  # Lead 1 (square)
     "synth_sine": 89,  # Pad 2 (warm)
     "synth_sawtooth": 82,  # Lead 3 (calliope)
+    "meow": 123,  # Bird Tweet — closest GM analog to a meow sample
 }
 
 
