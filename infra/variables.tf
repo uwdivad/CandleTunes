@@ -23,7 +23,14 @@ variable "repo_id" {
 
 variable "domain" {
   type        = string
-  description = "Custom domain to map to the service (must be verified for the deploying account)."
+  description = "Custom domain to map to the service (must be verified for the deploying account). Ignored when enable_domain_mapping is false."
+  default     = ""
+}
+
+variable "enable_domain_mapping" {
+  type        = bool
+  description = "Whether to create the custom-domain mapping. Set false to deploy on the *.run.app URL only."
+  default     = true
 }
 
 variable "image_tag" {
