@@ -16,6 +16,10 @@ With scale-to-zero, idle cost is ~$0.
    gcloud auth login
    gcloud auth application-default login   # credentials Terraform uses
    ```
+   > **Note:** if `GOOGLE_APPLICATION_CREDENTIALS` is set to a service-account key
+   > for an unrelated project, the Google provider uses it *instead of* ADC. Unset
+   > it in the shell you run Terraform from, e.g. (PowerShell):
+   > `Remove-Item Env:GOOGLE_APPLICATION_CREDENTIALS`
 4. **Verify the custom domain** for your account in
    [Search Console](https://search.google.com/search-console) — Cloud Run domain
    mappings require a verified domain or `terraform apply` will fail.
