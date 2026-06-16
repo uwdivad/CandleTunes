@@ -73,6 +73,12 @@ terraform destroy
 
 (APIs are left enabled to avoid disrupting other resources in the project.)
 
+## Troubleshooting
+
+- **`PERMISSION_DENIED` on the Cloud Build step during the first `apply`**: the
+  Cloud Build API was just enabled and hasn't propagated yet. Wait ~30–60s and
+  re-run `terraform apply` — it resumes at the build step.
+
 ## Notes
 
 - The on-disk OHLCV cache writes to `/tmp/cache` (set via `CACHE_DIR`). It persists
