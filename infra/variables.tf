@@ -33,6 +33,12 @@ variable "enable_domain_mapping" {
   default     = true
 }
 
+variable "github_repo" {
+  type        = string
+  description = "GitHub repo (owner/name) allowed to deploy via Workload Identity Federation."
+  default     = "uwdivad/CandleTunes"
+}
+
 variable "image_tag" {
   type        = string
   description = "Container image tag. Pass the git short SHA so each deploy is a new immutable tag."

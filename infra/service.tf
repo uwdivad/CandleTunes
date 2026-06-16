@@ -43,4 +43,11 @@ resource "google_cloud_run_v2_service" "app" {
   }
 
   depends_on = [null_resource.build_push]
+
+  # The image is set on the initial (bootstrap) deploy, then owned by the GitHub
+  # Actions workflow (`gcloud run deploy`). Ignore drift so CI and Terraform
+  # don't fight over the running revision's image.
+  lifecycle {
+    ignore_changes = [template[0].containers[0].image]
+  }
 }

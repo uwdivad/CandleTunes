@@ -48,9 +48,29 @@ terraform output domain_dns_records
 The managed TLS cert provisions automatically once DNS propagates (~15–60 min).
 The `service_url` output (`*.run.app`) works immediately for testing.
 
-## Redeploy
+## Continuous deployment (GitHub Actions)
 
-Bump the image to a fresh tag and apply again:
+Pushes to `main` auto-deploy via `.github/workflows/deploy.yml`: it builds the
+image and runs `gcloud run deploy`, authenticating to GCP **keylessly** through
+Workload Identity Federation (no service-account key stored in GitHub).
+
+The WIF pool/provider, the `candletunes-deploy` service account, and its IAM are
+all provisioned by Terraform (`cicd.tf`). The workflow's `workload_identity_provider`
+and `service_account` values come from these outputs:
+
+```bash
+terraform output workload_identity_provider
+terraform output deploy_service_account
+```
+
+Because CI owns the running image, the Cloud Run service has
+`ignore_changes = [..image]` — Terraform sets the bootstrap image and then leaves
+image updates to the workflow, so the two don't fight.
+
+## Redeploy (manual / Terraform)
+
+CI handles deploys on push to `main`. To deploy manually (e.g. before the workflow
+exists, or to change infra), bump the image tag and apply:
 
 ```bash
 terraform apply -var "image_tag=$(git rev-parse --short HEAD)"

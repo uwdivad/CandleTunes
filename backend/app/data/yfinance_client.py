@@ -4,7 +4,7 @@ import yfinance as yf
 from app.data.cache import get_cached, get_cached_value, set_cached, set_cached_value
 from app.logging_config import log_call
 
-MOVERS_CACHE_TTL_SECONDS = 900
+MOVERS_CACHE_TTL_SECONDS = 3600
 
 
 @log_call
