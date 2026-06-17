@@ -1,3 +1,4 @@
+import type { ManualVoice } from "../audio/AudioEngine";
 import type { ChordMode } from "../api/types";
 
 export const CHORD_MODES: { value: ChordMode; label: string }[] = [
@@ -8,14 +9,22 @@ export const CHORD_MODES: { value: ChordMode; label: string }[] = [
 
 export const ROOT_NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-export const INSTRUMENTS = [
-  { value: "", label: "Auto (Default)" },
+/**
+ * The single source of truth for selectable instrument sounds, shared by both the
+ * per-track config and the interactive piano so the two never drift apart.
+ */
+export const VOICES: { value: ManualVoice; label: string }[] = [
   { value: "piano", label: "Piano" },
   // { value: "meow", label: "Meow 🐱" },  // hidden for now — engine support stays in AudioEngine
   { value: "synth_triangle", label: "Synth Triangle" },
   { value: "synth_sine", label: "Synth Sine" },
   { value: "synth_sawtooth", label: "Synth Sawtooth" },
+  { value: "synth_square", label: "Synth Square" },
 ];
+
+// Per-track instrument picker: the shared voices plus an "Auto" option (tracks
+// auto-assign an instrument when none is chosen; the interactive piano can't).
+export const INSTRUMENTS = [{ value: "", label: "Auto (Default)" }, ...VOICES];
 
 export const OCTAVES = [
   { value: "", label: "Auto" },
