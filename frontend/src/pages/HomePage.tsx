@@ -6,6 +6,7 @@ import { AudioEngine, type ManualVoice } from "../audio/AudioEngine";
 import { colorForTrack } from "../audio/trackColors";
 import { MAX_TICKERS } from "../constants";
 import { AuthButton } from "../components/AuthButton";
+import { ChartLoadingPanel } from "../components/ChartLoadingPanel";
 import { DateRangePicker } from "../components/DateRangePicker";
 import { KeyboardSettings } from "../components/KeyboardSettings";
 import { PianoKeyboard } from "../components/PianoKeyboard";
@@ -563,6 +564,16 @@ export function HomePage() {
                   />
                 );
               })}
+              {sonifyMutation.isPending &&
+                tickers
+                  .filter((t) => !composition.tracks.some((track) => track.ticker === t))
+                  .map((ticker, i) => (
+                    <ChartLoadingPanel
+                      key={`pending-${ticker}`}
+                      ticker={ticker}
+                      color={resolveColor(ticker, composition.tracks.length + i)}
+                    />
+                  ))}
             </div>
           </>
         )}

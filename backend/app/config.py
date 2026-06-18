@@ -1,9 +1,15 @@
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# backend/.env (next to the venv); real environment variables still take
+# precedence over anything declared there.
+_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
+
     cache_dir: Path = Path(__file__).resolve().parent.parent / "cache"
     cache_ttl_seconds: int = 3600
     cors_origins: list[str] = ["http://localhost:5173"]

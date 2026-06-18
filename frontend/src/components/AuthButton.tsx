@@ -30,7 +30,7 @@ export function AuthButton() {
         {user?.picture && (
           <img className="auth-avatar" src={user.picture} alt="" referrerPolicy="no-referrer" />
         )}
-        <span className="auth-name">{user?.name ?? user?.email ?? "Signed in"}</span>
+        <span className="auth-name">Hi, {user?.name ?? user?.email ?? "there"}</span>
         <button type="button" className="auth-signout" onClick={signOut}>
           Sign out
         </button>

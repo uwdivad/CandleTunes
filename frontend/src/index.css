@@ -595,6 +595,66 @@ input[type="range"] {
   color: #ef5350;
 }
 
+/* Loading placeholder shown where a newly-added ticker's chart will appear. */
+.chart-loading-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 240px;
+}
+
+.chart-loading-keys {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  height: 96px;
+  padding: 8px;
+  background: rgba(10, 12, 20, 0.45);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.chart-loading-key {
+  border-radius: 0 0 4px 4px;
+  transform-origin: top center;
+  animation: chart-key-press 1.1s ease-in-out infinite;
+}
+
+.chart-loading-key-white {
+  width: 24px;
+  height: 100%;
+  background: linear-gradient(#fafafa, #dcdcdc);
+}
+
+.chart-loading-key-black {
+  position: absolute;
+  top: 8px;
+  width: 15px;
+  height: 58%;
+  z-index: 2;
+  background: linear-gradient(#2a2a2a, #050505);
+  border-radius: 0 0 3px 3px;
+}
+
+@keyframes chart-key-press {
+  0%, 55%, 100% {
+    transform: translateY(0);
+    box-shadow: inset 0 0 0 transparent;
+  }
+  25% {
+    transform: translateY(6px);
+    box-shadow: inset 0 -26px 14px -10px var(--key-accent, #888);
+  }
+}
+
+.chart-loading-label {
+  color: var(--text-muted);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
 .candlestick-chart-header {
   margin-bottom: 8px;
   display: flex;
