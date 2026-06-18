@@ -100,6 +100,16 @@ export function HomePage() {
     setTrackConfigs((prev) => ({ ...prev, [ticker]: config }));
   };
 
+  // Reset every form value to its default by clearing the persisted state and
+  // reloading, so all the local component state re-initializes from scratch.
+  // Sign-in is preserved (the auth token is not a form value).
+  const handleResetDefaults = () => {
+    if (!window.confirm("Reset all settings to defaults? This clears your saved tickers and musical settings.")) return;
+    localStorage.removeItem(TICKERS_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_TICKERS_STORAGE_KEY);
+    window.location.reload();
+  };
+
   const audioEngineRef = useRef<AudioEngine | null>(null);
   if (audioEngineRef.current === null) {
     audioEngineRef.current = new AudioEngine();
@@ -480,6 +490,9 @@ export function HomePage() {
           {sonifyMutation.isError && (
             <p className="error">{(sonifyMutation.error as Error).message}</p>
           )}
+          <button type="button" className="reset-defaults-btn" onClick={handleResetDefaults}>
+            Reset to defaults
+          </button>
         </section>
       </aside>
 

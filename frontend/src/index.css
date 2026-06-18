@@ -110,6 +110,18 @@ h1 {
   margin-bottom: 16px;
 }
 
+.reset-defaults-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.reset-defaults-btn:hover {
+  border-color: var(--loss);
+  color: var(--loss);
+}
+
 .auth-avatar {
   width: 28px;
   height: 28px;
