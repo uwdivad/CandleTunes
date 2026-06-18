@@ -5,6 +5,7 @@ import { DEFAULT_TRACK_MIXER, type ChordMode, type ScaleName, type SonifyRespons
 import { AudioEngine, type ManualVoice } from "../audio/AudioEngine";
 import { colorForTrack } from "../audio/trackColors";
 import { MAX_TICKERS } from "../constants";
+import { AuthButton } from "../components/AuthButton";
 import { DateRangePicker } from "../components/DateRangePicker";
 import { KeyboardSettings } from "../components/KeyboardSettings";
 import { PianoKeyboard } from "../components/PianoKeyboard";
@@ -425,6 +426,8 @@ export function HomePage() {
           <h1>CandleTunes</h1>
           <p className="subtitle">Turn market movement into tunes.</p>
         </header>
+
+        <AuthButton />
 
         <TopMovers
           tickers={tickers}

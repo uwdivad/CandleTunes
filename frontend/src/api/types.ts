@@ -1,3 +1,10 @@
+export interface User {
+  sub: string;
+  email: string;
+  name: string | null;
+  picture: string | null;
+}
+
 export interface OHLCVBar {
   date: string;
   open: number;

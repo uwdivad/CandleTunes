@@ -7,7 +7,22 @@ import type {
   MoversResponse,
   SonifyRequest,
   SonifyResponse,
+  User,
 } from "./types";
+
+/** Fetch the signed-in user's verified profile. Enabled only when a token is present. */
+export function useMe(enabled: boolean) {
+  return useQuery({
+    queryKey: ["me"],
+    queryFn: async () => {
+      const { data } = await apiClient.get<User>("/api/auth/me");
+      return data;
+    },
+    enabled,
+    retry: false,
+    staleTime: Infinity,
+  });
+}
 
 export function useChartData(
   ticker: string,

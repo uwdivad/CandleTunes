@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import chart, midi, movers, sonify
+from app.api import auth, chart, midi, movers, sonify
 from app.config import settings
 from app.logging_config import log_call
 
@@ -15,6 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router, prefix="/api")
 app.include_router(chart.router, prefix="/api")
 app.include_router(sonify.router, prefix="/api")
 app.include_router(midi.router, prefix="/api")
