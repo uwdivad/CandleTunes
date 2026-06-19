@@ -136,8 +136,12 @@ def test_feedback_requires_token(client):
 
 def test_chat_503_when_provider_unconfigured(client, monkeypatch):
     headers = _auth(monkeypatch)
-    # Restore the real factory and clear the key → 503 before any LLM work.
+    # Restore the real factory, then pin the provider and clear BOTH keys so the
+    # 503 fires before any LLM work — independent of the ambient .env/LLM_PROVIDER
+    # (otherwise a configured provider would make a real API call here).
     monkeypatch.setattr("app.api.assistant.get_provider", real_get_provider)
+    monkeypatch.setattr(settings, "llm_provider", "anthropic")
     monkeypatch.setattr(settings, "anthropic_api_key", "")
+    monkeypatch.setattr(settings, "openai_api_key", "")
     resp = client.post("/api/assistant/chat", json=CHAT_BODY, headers=headers)
     assert resp.status_code == 503
