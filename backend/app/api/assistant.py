@@ -15,11 +15,26 @@ from app.logging_config import log_call
 from app.models.assistant import (
     AssistantChatResponse,
     AssistantRequest,
+    ChatMessage,
     FeedbackRequest,
 )
 from app.sonify.summary import summarize_tickers
 
 router = APIRouter()
+
+# Cap how much chat history is sent to the LLM. The current settings snapshot
+# (in the system prompt) carries the state, so only recent turns are needed for
+# conversational context — this bounds input-token growth on long chats.
+MAX_HISTORY_MESSAGES = 8
+
+
+def _recent_messages(messages: list[ChatMessage]) -> list[ChatMessage]:
+    """Last N messages, trimmed so the first is a user turn (Anthropic requires
+    the conversation to start with `user`)."""
+    recent = messages[-MAX_HISTORY_MESSAGES:]
+    while recent and recent[0].role != "user":
+        recent = recent[1:]
+    return recent
 
 
 @router.post("/assistant/chat", response_model=AssistantChatResponse)
@@ -38,7 +53,7 @@ def chat(
     # 503s here (unconfigured/unknown provider) propagate before we do any work.
     provider = get_provider(req.provider)
     summaries = summarize_tickers(req.tickers, req.start, req.end)
-    system = build_system_prompt(summaries)
+    system = build_system_prompt(summaries, req.current_settings)
 
     run_fields = dict(
         conversation_id=conversation_id,
@@ -55,7 +70,7 @@ def chat(
 
     started = time.monotonic()
     try:
-        result = provider.complete(system, req.messages)
+        result = provider.complete(system, _recent_messages(req.messages))
     except Exception as exc:  # noqa: BLE001 — record the failure, surface a 502
         save_run(
             db,

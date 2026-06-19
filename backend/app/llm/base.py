@@ -1,7 +1,7 @@
 import json
 from typing import Protocol
 
-from app.models.assistant import AssistantResult, ChatMessage
+from app.models.assistant import AssistantResult, AssistantSettings, ChatMessage
 
 # A friendly stand-in when the model declines or returns nothing parseable.
 REFUSAL_MESSAGE = (
@@ -26,9 +26,15 @@ ALLOWED VALUES (use only these):
 """.strip()
 
 
-def build_system_prompt(summaries: dict[str, dict]) -> str:
-    """System prompt: what the app does, the allowed values, and how to respond.
-    The per-ticker data summary is embedded so settings adapt to the real charts."""
+def build_system_prompt(
+    summaries: dict[str, dict], current_settings: AssistantSettings | None = None
+) -> str:
+    """System prompt: what the app does, the allowed values, the active settings,
+    and the per-ticker data summary so settings adapt to the real charts.
+
+    Volatile context (current settings + price data) is appended last and the JSON
+    is serialized compactly to keep the input token count down."""
+    current = current_settings.model_dump(exclude_none=True) if current_settings else {}
     return f"""You are the "arranger" for CandleTunes, an app that sonifies stock/crypto \
 price history into music. Each selected ticker becomes one track; its closing price drives \
 pitch (within a scale) and its volume/volatility drives note velocity.
@@ -40,13 +46,16 @@ and registers so they don't muddy each other. Track 0 conventionally uses piano.
 
 Respond with TWO things in the structured output:
 - message: one or two friendly sentences describing what you set and why.
-- settings: ONLY the fields that should change from the current state. Omit everything \
+- settings: ONLY the fields that should change from CURRENT SETTINGS below. Omit everything \
 you're leaving alone. Per-ticker overrides go in `tracks`, keyed by the EXACT ticker symbol.
 
 {_ALLOWED}
 
+CURRENT SETTINGS (the active state; absent fields are at their defaults):
+{json.dumps(current, separators=(",", ":"))}
+
 PRICE DATA SUMMARY (per ticker):
-{json.dumps(summaries, indent=2)}
+{json.dumps(summaries, separators=(",", ":"))}
 """
 
 

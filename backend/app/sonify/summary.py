@@ -30,10 +30,11 @@ def summarize_ticker(ticker: str, start: str, end: str) -> dict:
     else:
         trend = "flat"
 
+    # Raw first/last closes are intentionally omitted — return %, volatility,
+    # trend and drawdown are what drive musical choices, and dropping the two
+    # price numbers trims the per-ticker payload sent to the LLM.
     return {
         "bars": n,
-        "first_close": round(first, 4),
-        "last_close": round(last, 4),
         "total_return_pct": total_return_pct,
         "daily_volatility_pct": daily_vol_pct,
         "trend": trend,
