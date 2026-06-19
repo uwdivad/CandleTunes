@@ -2,6 +2,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { apiClient } from "./client";
 import type {
+  AssistantChatResponse,
+  AssistantFeedbackRequest,
+  AssistantRequest,
   ChartResponse,
   MidiExportRequest,
   MoversResponse,
@@ -58,6 +61,26 @@ export function useSonify() {
     mutationFn: async (request: SonifyRequest) => {
       const { data } = await apiClient.post<SonifyResponse>("/api/sonify", request);
       return data;
+    },
+  });
+}
+
+export function useAssistantChat() {
+  return useMutation({
+    mutationFn: async (request: AssistantRequest) => {
+      const { data } = await apiClient.post<AssistantChatResponse>(
+        "/api/assistant/chat",
+        request
+      );
+      return data;
+    },
+  });
+}
+
+export function useAssistantFeedback() {
+  return useMutation({
+    mutationFn: async (request: AssistantFeedbackRequest) => {
+      await apiClient.post("/api/assistant/feedback", request);
     },
   });
 }

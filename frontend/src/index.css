@@ -738,3 +738,136 @@ input[type="range"] {
   pointer-events: none;
   opacity: 0.8;
 }
+
+/* Arranger assistant */
+.assistant-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-bg);
+  padding: 12px;
+}
+
+.assistant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.assistant-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.assistant-newchat {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.assistant-newchat:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.assistant-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.assistant-transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.assistant-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.assistant-bubble-user {
+  align-self: flex-end;
+  background: rgba(79, 157, 222, 0.18);
+  color: var(--text);
+}
+
+.assistant-bubble-assistant {
+  align-self: flex-start;
+  background: rgba(46, 48, 58, 0.5);
+  color: var(--text);
+}
+
+.assistant-feedback {
+  display: flex;
+  gap: 6px;
+}
+
+.assistant-feedback button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.5;
+  padding: 0;
+}
+
+.assistant-feedback button:hover,
+.assistant-feedback button.rated {
+  opacity: 1;
+}
+
+.assistant-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.assistant-input-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.assistant-input-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.assistant-input-row button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.assistant-input-row button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

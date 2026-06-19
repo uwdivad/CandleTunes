@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useMidiExport, useSonify } from "../api/queries";
-import { DEFAULT_TRACK_MIXER, type ChordMode, type ScaleName, type SonifyResponse, type TrackConfig, type TrackMixerSettings } from "../api/types";
+import { DEFAULT_TRACK_MIXER, type AssistantSettings, type ChordMode, type ScaleName, type SonifyResponse, type TrackConfig, type TrackMixerSettings } from "../api/types";
 import { AudioEngine, type ManualVoice } from "../audio/AudioEngine";
 import { colorForTrack } from "../audio/trackColors";
 import { MAX_TICKERS } from "../constants";
+import { AssistantPanel } from "../components/AssistantPanel";
 import { AuthButton } from "../components/AuthButton";
 import { ChartLoadingPanel } from "../components/ChartLoadingPanel";
 import { DateRangePicker } from "../components/DateRangePicker";
@@ -99,6 +100,69 @@ export function HomePage() {
 
   const handleTrackConfigChange = (ticker: string, config: TrackConfig) => {
     setTrackConfigs((prev) => ({ ...prev, [ticker]: config }));
+  };
+
+  // Snapshot of the current musical state, sent to the arranger so it only
+  // changes what it means to change.
+  const buildCurrentSettings = (): AssistantSettings => ({
+    scale,
+    root_note: rootNote,
+    notes_per_bar: notesPerBar,
+    speed_mode: speedMode,
+    bpm,
+    total_duration_sec: totalDuration,
+    global_instrument: globalInstrument || undefined,
+    legato,
+    swing,
+    chord_mode: chordMode,
+    tracks: Object.fromEntries(
+      tickers.map((ticker) => [
+        ticker,
+        {
+          instrument: trackConfigs[ticker]?.instrument,
+          scale: trackConfigs[ticker]?.scale,
+          root_note: trackConfigs[ticker]?.rootNote,
+          notes_per_bar: trackConfigs[ticker]?.notesPerBar,
+          register_base_midi: trackConfigs[ticker]?.registerBaseMidi as
+            | 36 | 48 | 60 | 72 | 84 | undefined,
+          chord_mode: trackConfigs[ticker]?.chordMode,
+          color: customColors[ticker],
+        },
+      ])
+    ),
+  });
+
+  // Apply an arranger patch onto the existing controls. The debounced
+  // re-sonify effect (keyed on these setters' state) fires automatically.
+  const applyAssistantSettings = (s: AssistantSettings) => {
+    if (s.scale !== undefined) setScale(s.scale);
+    if (s.root_note !== undefined) setRootNote(s.root_note);
+    if (s.notes_per_bar !== undefined) setNotesPerBar(s.notes_per_bar);
+    if (s.speed_mode !== undefined) setSpeedMode(s.speed_mode);
+    if (s.bpm !== undefined) setBpm(s.bpm);
+    if (s.total_duration_sec !== undefined) setTotalDuration(s.total_duration_sec);
+    if (s.global_instrument !== undefined) setGlobalInstrument(s.global_instrument);
+    if (s.legato !== undefined) setLegato(s.legato);
+    if (s.swing !== undefined) setSwing(s.swing);
+    if (s.chord_mode !== undefined) setChordMode(s.chord_mode);
+
+    if (s.tracks) {
+      for (const [ticker, t] of Object.entries(s.tracks)) {
+        if (t.color !== undefined) handleColorChange(ticker, t.color);
+        // Map snake_case patch → camelCase TrackConfig, merging with existing
+        // config (handleTrackConfigChange replaces the whole entry).
+        const patch: TrackConfig = {};
+        if (t.instrument !== undefined) patch.instrument = t.instrument;
+        if (t.scale !== undefined) patch.scale = t.scale;
+        if (t.root_note !== undefined) patch.rootNote = t.root_note;
+        if (t.notes_per_bar !== undefined) patch.notesPerBar = t.notes_per_bar;
+        if (t.register_base_midi !== undefined) patch.registerBaseMidi = t.register_base_midi;
+        if (t.chord_mode !== undefined) patch.chordMode = t.chord_mode;
+        if (Object.keys(patch).length > 0) {
+          setTrackConfigs((prev) => ({ ...prev, [ticker]: { ...prev[ticker], ...patch } }));
+        }
+      }
+    }
   };
 
   // Reset every form value to its default by clearing the persisted state and
@@ -486,6 +550,12 @@ export function HomePage() {
             onLegatoChange={setLegato}
             onSwingChange={setSwing}
             onChordModeChange={setChordMode}
+          />
+          <AssistantPanel
+            tickers={tickers}
+            dateRange={range}
+            currentSettings={buildCurrentSettings()}
+            onApply={applyAssistantSettings}
           />
           {sonifyMutation.isPending && <p className="status-text">Updating…</p>}
           {sonifyMutation.isError && (

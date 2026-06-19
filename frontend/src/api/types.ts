@@ -120,3 +120,57 @@ export interface MoversResponse {
   gainers: MoverItem[];
   losers: MoverItem[];
 }
+
+// --- Assistant ("arranger") ---
+// snake_case to mirror the backend Pydantic models in app/models/assistant.py.
+
+export interface AssistantChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AssistantTrackSettings {
+  instrument?: string;
+  scale?: ScaleName;
+  root_note?: number;
+  notes_per_bar?: 1 | 2;
+  register_base_midi?: 36 | 48 | 60 | 72 | 84;
+  chord_mode?: ChordMode;
+  color?: string;
+}
+
+export interface AssistantSettings {
+  scale?: ScaleName;
+  root_note?: number;
+  notes_per_bar?: 1 | 2;
+  speed_mode?: "bpm" | "duration";
+  bpm?: number;
+  total_duration_sec?: number;
+  global_instrument?: string;
+  legato?: number;
+  swing?: number;
+  chord_mode?: ChordMode;
+  tracks?: Record<string, AssistantTrackSettings>;
+}
+
+export interface AssistantRequest {
+  tickers: string[];
+  start: string;
+  end: string;
+  messages: AssistantChatMessage[];
+  current_settings?: AssistantSettings | null;
+  provider?: string | null;
+  conversation_id?: string | null;
+}
+
+export interface AssistantChatResponse {
+  message: string;
+  settings: AssistantSettings;
+  run_id: string;
+}
+
+export interface AssistantFeedbackRequest {
+  run_id: string;
+  rating: "up" | "down";
+  note?: string;
+}
