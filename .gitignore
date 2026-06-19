@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 backend/cache/
 backend/logs/
+backend/*.db
 node_modules/
 frontend/dist/
 .idea/

@@ -1,12 +1,23 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, chart, midi, movers, sonify
+from app.api import assistant, auth, chart, midi, movers, sonify
 from app.config import settings
+from app.db.engine import init_db
 from app.logging_config import log_call
 
-app = FastAPI(title="CandleTunes API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create assistant_runs / assistant_feedback tables if absent.
+    init_db()
+    yield
+
+
+app = FastAPI(title="CandleTunes API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,6 +31,7 @@ app.include_router(chart.router, prefix="/api")
 app.include_router(sonify.router, prefix="/api")
 app.include_router(midi.router, prefix="/api")
 app.include_router(movers.router, prefix="/api")
+app.include_router(assistant.router, prefix="/api")
 
 
 @app.get("/api/health")

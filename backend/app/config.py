@@ -29,6 +29,22 @@ class Settings(BaseSettings):
     # container image. Absent in local dev, so the static mount is skipped there.
     static_dir: Path = Path(__file__).resolve().parent.parent / "static"
 
+    # LLM "arranger" assistant. Provider is per-request overridable; keys/models
+    # come from the environment (or backend/.env). Calling an unconfigured
+    # provider returns 503, mirroring the auth dependency.
+    llm_provider: str = "anthropic"  # "anthropic" | "openai"
+    anthropic_api_key: str = ""
+    openai_api_key: str = ""
+    anthropic_model: str = "claude-opus-4-8"
+    openai_model: str = "gpt-4.1"
+
+    # Persistence for assistant runs + feedback. SQLite keeps local dev and tests
+    # infra-free; set a postgresql+psycopg:// URL in prod — the same ORM models
+    # run on both.
+    database_url: str = "sqlite:///" + str(
+        Path(__file__).resolve().parent.parent / "candletunes.db"
+    )
+
 
 settings = Settings()
 settings.cache_dir.mkdir(parents=True, exist_ok=True)
