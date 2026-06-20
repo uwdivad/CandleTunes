@@ -83,11 +83,25 @@ see this.
   - With `notes_per_bar == 2`, each bar emits two notes (open price → close price) within
     one note slot, each with `duration_sec = half_slot * LEGATO` (`LEGATO = 0.9`).
 - **`data/yfinance_client.py`** — wraps `yfinance` downloads. Raises `ValueError` on
-  empty/failed fetches, which routers convert to HTTP 502.
+  empty/failed fetches, which routers convert to HTTP 502. The raw `yf.download`/
+  `yf.screen` calls go through `data/retry.py`'s `@yf_retry` (tenacity) — exponential
+  backoff with jitter on *raised* transient errors (Yahoo 429 / network), re-raising the
+  final exception after `yf_retry_attempts`. Deterministic "no data" results are not
+  retried (validated after the call).
 - **`data/cache.py`** — disk cache in `backend/cache/` (pickled DataFrames, keyed by
   sha256 of `ticker|start|end|interval`, gitignored). OHLCV cache TTL is
   `cache_ttl_seconds` (1h default); top-movers cache TTL is `MOVERS_CACHE_TTL_SECONDS`
   (15min, in `yfinance_client.py`).
+- **`rate_limit.py`** — incoming per-client rate limiting via `slowapi`. `main.py`
+  registers the shared `limiter`, a 429 exception handler, and `SlowAPIMiddleware` (applies
+  `rate_limit_default` to every route), with CORS kept outermost so 429s keep CORS headers.
+  Expensive endpoints add stricter caps via `@limiter.limit(lambda *_: settings.<limit>)`
+  (`/api/sonify` → `rate_limit_sonify`, `/api/assistant/chat` → `rate_limit_assistant`);
+  those endpoints need both `request: Request` and `response: Response` params (slowapi
+  injects rate-limit headers into the latter). Clients are keyed by the first
+  `X-Forwarded-For` hop. Storage is `rate_limit_storage_uri` — `memory://` (per instance)
+  today; switch to `redis://…` (+ `pip install "limits[redis]"`) for a shared store, no
+  code change.
 
 ### Frontend (`frontend/src/`)
 

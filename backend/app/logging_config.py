@@ -1,10 +1,31 @@
 import functools
 import logging
+import time
 from logging.handlers import TimedRotatingFileHandler
 
 from app.config import settings
 
 _LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+
+
+class SafeTimedRotatingFileHandler(TimedRotatingFileHandler):
+    """TimedRotatingFileHandler that tolerates Windows file locking on rollover.
+
+    Under ``uvicorn --reload`` (a watcher parent + a worker child) — or a pytest
+    run alongside the dev server — two processes hold the same log file open. On
+    Windows the midnight rename then fails with ``PermissionError`` (WinError 32),
+    which crashes the logging thread and leaves the stream closed. Swallow that
+    case: reopen the stream so logging continues, and push the next rollover to
+    the following interval so we don't retry the rename on every record.
+    """
+
+    def doRollover(self) -> None:  # noqa: N802 (stdlib name)
+        try:
+            super().doRollover()
+        except (PermissionError, OSError):
+            if self.stream is None:
+                self.stream = self._open()
+            self.rolloverAt = self.computeRollover(int(time.time()))
 
 
 def configure_logging() -> None:
@@ -31,7 +52,7 @@ def configure_logging() -> None:
         isinstance(h, TimedRotatingFileHandler) for h in app_logger.handlers
     ):
         settings.log_dir.mkdir(parents=True, exist_ok=True)
-        file_handler = TimedRotatingFileHandler(
+        file_handler = SafeTimedRotatingFileHandler(
             settings.log_dir / "candletunes.log",
             when="midnight",
             backupCount=settings.log_file_backup_count,

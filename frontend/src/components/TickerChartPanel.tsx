@@ -23,6 +23,8 @@ interface TickerChartPanelProps {
   onTrackMixerChange: (settings: Partial<TrackMixerSettings>) => void;
   independent: boolean;
   onToggleIndependent: () => void;
+  locked: boolean;
+  onToggleLock: () => void;
 }
 
 export function TickerChartPanel({
@@ -44,6 +46,8 @@ export function TickerChartPanel({
   onTrackMixerChange,
   independent,
   onToggleIndependent,
+  locked,
+  onToggleLock,
 }: TickerChartPanelProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { data, isLoading, isError, error } = useChartData(ticker, start, end);
@@ -88,6 +92,8 @@ export function TickerChartPanel({
         onToggleSettings={() => setSettingsOpen((prev) => !prev)}
         independent={independent}
         onToggleIndependent={onToggleIndependent}
+        locked={locked}
+        onToggleLock={onToggleLock}
       />
       {settingsOpen && (
         <TrackConfigPanel

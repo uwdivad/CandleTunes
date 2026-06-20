@@ -1,7 +1,7 @@
 import time
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
@@ -12,6 +12,7 @@ from app.db.repository import get_run, save_feedback, save_run
 from app.llm import get_provider
 from app.llm.base import REFUSAL_MESSAGE, build_system_prompt
 from app.logging_config import log_call
+from app.rate_limit import limiter
 from app.models.assistant import (
     AssistantChatResponse,
     AssistantRequest,
@@ -38,8 +39,11 @@ def _recent_messages(messages: list[ChatMessage]) -> list[ChatMessage]:
 
 
 @router.post("/assistant/chat", response_model=AssistantChatResponse)
+@limiter.limit(lambda *_: settings.rate_limit_assistant)
 @log_call
 def chat(
+    request: Request,
+    response: Response,
     req: AssistantRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

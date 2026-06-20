@@ -45,6 +45,23 @@ class Settings(BaseSettings):
         Path(__file__).resolve().parent.parent / "candletunes.db"
     )
 
+    # Outbound retry for Yahoo Finance calls (see app/data/retry.py). yfinance has
+    # no built-in retry and Yahoo throttles often, so transient failures are
+    # retried with exponential backoff + jitter before surfacing as a 502.
+    yf_retry_attempts: int = 4
+    yf_retry_initial_seconds: float = 0.5
+    yf_retry_max_seconds: float = 8.0
+
+    # Incoming per-client rate limiting (see app/rate_limit.py). Storage backend is
+    # chosen from the URI scheme: "memory://" is in-process (per instance); switch
+    # to "redis://host:6379" (and `pip install "limits[redis]"`) for a shared,
+    # restart-surviving store across instances — no code change needed.
+    rate_limit_enabled: bool = True
+    rate_limit_storage_uri: str = "memory://"
+    rate_limit_default: str = "120/minute"
+    rate_limit_sonify: str = "30/minute"
+    rate_limit_assistant: str = "10/minute"
+
 
 settings = Settings()
 settings.cache_dir.mkdir(parents=True, exist_ok=True)

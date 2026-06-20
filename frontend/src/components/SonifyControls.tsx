@@ -30,6 +30,8 @@ interface SonifyControlsProps {
   onLegatoChange: (legato: number) => void;
   onSwingChange: (swing: number) => void;
   onChordModeChange: (chordMode: ChordMode) => void;
+  overrideLocks: boolean;
+  onOverrideLocksChange: (value: boolean) => void;
 }
 
 export function SonifyControls({
@@ -53,10 +55,25 @@ export function SonifyControls({
   onLegatoChange,
   onSwingChange,
   onChordModeChange,
+  overrideLocks,
+  onOverrideLocksChange,
 }: SonifyControlsProps) {
   return (
     <div className="field-group sonify-controls">
       <label className="field-label">Sonification</label>
+
+      <label
+        className="inline-field override-locks-toggle"
+        style={{ flexDirection: 'row', alignItems: 'center', gap: '6px', marginBottom: '8px' }}
+        title="When off, changing a global setting (scale, key, notes/bar, harmony, instrument) skips any chart locked by the assistant, leaving its per-chart settings intact. When on, every global change is forced onto all charts, overriding their locks."
+      >
+        <input
+          type="checkbox"
+          checked={overrideLocks}
+          onChange={(e) => onOverrideLocksChange(e.target.checked)}
+        />
+        Override locked charts
+      </label>
       <div className="sonify-controls-row">
         <label className="inline-field">
           Scale

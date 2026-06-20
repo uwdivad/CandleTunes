@@ -25,6 +25,8 @@ interface CandlestickChartProps {
   onToggleSettings: () => void;
   independent: boolean;
   onToggleIndependent: () => void;
+  locked: boolean;
+  onToggleLock: () => void;
 }
 
 export function CandlestickChart({
@@ -42,6 +44,8 @@ export function CandlestickChart({
   onToggleSettings,
   independent,
   onToggleIndependent,
+  locked,
+  onToggleLock,
 }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -216,6 +220,19 @@ export function CandlestickChart({
             title={independent ? "Independent timeline (click to re-sync with other tracks)" : "Give this chart its own playback timeline"}
           >
             {independent ? "🔓" : "🔗"}
+          </button>
+          <button
+            type="button"
+            className={`track-mixer-btn track-lock-btn ${locked ? "active" : ""}`}
+            onClick={onToggleLock}
+            aria-pressed={locked}
+            title={
+              locked
+                ? "Settings locked — global changes skip this chart (click to unlock)"
+                : "Lock this chart's settings against global changes"
+            }
+          >
+            {locked ? "🔒" : "🔓"}
           </button>
         </div>
       </div>

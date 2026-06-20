@@ -83,6 +83,10 @@ export function HomePage() {
   // Tracks given their own independent playback position, decoupled from the shared transport.
   const [independentTracks, setIndependentTracks] = useState<Set<number>>(new Set());
   const [trackTimes, setTrackTimes] = useState<Record<number, number>>({});
+  // Tickers (by symbol) whose per-track settings the assistant locked. A global
+  // control change skips these unless the "override locks" toggle is active.
+  const [lockedTracks, setLockedTracks] = useState<Set<string>>(new Set());
+  const [overrideLocks, setOverrideLocks] = useState(false);
 
   const getMixer = (ticker: string): TrackMixerSettings => trackMixer[ticker] || DEFAULT_TRACK_MIXER;
 
@@ -100,6 +104,71 @@ export function HomePage() {
 
   const handleTrackConfigChange = (ticker: string, config: TrackConfig) => {
     setTrackConfigs((prev) => ({ ...prev, [ticker]: config }));
+  };
+
+  // Tickers whose chart has its own independent playback timeline. Changing a
+  // global control leaves these alone; every other chart gets its matching
+  // per-track override cleared so the new global value wins.
+  const independentTickers = (): Set<string> => {
+    const result = new Set<string>();
+    for (const t of composition?.tracks ?? []) {
+      if (independentTracks.has(t.track)) result.add(t.ticker);
+    }
+    return result;
+  };
+
+  // Drop a per-track override field from every non-independent track so the
+  // global setting takes effect there. Tracks with their own timeline always
+  // keep their override; assistant-locked tracks keep it too unless the global
+  // "override locks" toggle is active.
+  const clearTrackOverride = (field: keyof TrackConfig) => {
+    const indep = independentTickers();
+    setTrackConfigs((prev) => {
+      const next: Record<string, TrackConfig> = {};
+      for (const [ticker, cfg] of Object.entries(prev)) {
+        const lockedFromGlobal = lockedTracks.has(ticker) && !overrideLocks;
+        if (indep.has(ticker) || lockedFromGlobal) {
+          next[ticker] = cfg;
+        } else {
+          const rest = { ...cfg };
+          delete rest[field];
+          next[ticker] = rest;
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleToggleLock = (ticker: string) => {
+    setLockedTracks((prev) => {
+      const next = new Set(prev);
+      if (next.has(ticker)) next.delete(ticker);
+      else next.add(ticker);
+      return next;
+    });
+  };
+
+  // Global SonifyControls setters that overlap a per-track config field: apply
+  // the global value and clear the matching override on non-independent charts.
+  const handleGlobalScaleChange = (value: ScaleName) => {
+    setScale(value);
+    clearTrackOverride("scale");
+  };
+  const handleGlobalRootNoteChange = (value: number) => {
+    setRootNote(value);
+    clearTrackOverride("rootNote");
+  };
+  const handleGlobalNotesPerBarChange = (value: 1 | 2) => {
+    setNotesPerBar(value);
+    clearTrackOverride("notesPerBar");
+  };
+  const handleGlobalChordModeChange = (value: ChordMode) => {
+    setChordMode(value);
+    clearTrackOverride("chordMode");
+  };
+  const handleGlobalInstrumentChange = (value: string) => {
+    setGlobalInstrument(value);
+    clearTrackOverride("instrument");
   };
 
   // Snapshot of the current musical state, sent to the arranger so it only
@@ -135,31 +204,37 @@ export function HomePage() {
   // Apply an arranger patch onto the existing controls. The debounced
   // re-sonify effect (keyed on these setters' state) fires automatically.
   const applyAssistantSettings = (s: AssistantSettings) => {
-    if (s.scale !== undefined) setScale(s.scale);
-    if (s.root_note !== undefined) setRootNote(s.root_note);
-    if (s.notes_per_bar !== undefined) setNotesPerBar(s.notes_per_bar);
-    if (s.speed_mode !== undefined) setSpeedMode(s.speed_mode);
-    if (s.bpm !== undefined) setBpm(s.bpm);
-    if (s.total_duration_sec !== undefined) setTotalDuration(s.total_duration_sec);
-    if (s.global_instrument !== undefined) setGlobalInstrument(s.global_instrument);
-    if (s.legato !== undefined) setLegato(s.legato);
-    if (s.swing !== undefined) setSwing(s.swing);
-    if (s.chord_mode !== undefined) setChordMode(s.chord_mode);
+    // The backend serializes the patch with explicit `null` for fields the
+    // assistant left unchanged, so guard with `!= null` (not `!== undefined`)
+    // — otherwise a null overwrites good numeric state and crashes the controls.
+    if (s.scale != null) setScale(s.scale);
+    if (s.root_note != null) setRootNote(s.root_note);
+    if (s.notes_per_bar != null) setNotesPerBar(s.notes_per_bar);
+    if (s.speed_mode != null) setSpeedMode(s.speed_mode);
+    if (s.bpm != null) setBpm(s.bpm);
+    if (s.total_duration_sec != null) setTotalDuration(s.total_duration_sec);
+    if (s.global_instrument != null) setGlobalInstrument(s.global_instrument);
+    if (s.legato != null) setLegato(s.legato);
+    if (s.swing != null) setSwing(s.swing);
+    if (s.chord_mode != null) setChordMode(s.chord_mode);
 
     if (s.tracks) {
       for (const [ticker, t] of Object.entries(s.tracks)) {
-        if (t.color !== undefined) handleColorChange(ticker, t.color);
+        if (t.color != null) handleColorChange(ticker, t.color);
         // Map snake_case patch → camelCase TrackConfig, merging with existing
         // config (handleTrackConfigChange replaces the whole entry).
         const patch: TrackConfig = {};
-        if (t.instrument !== undefined) patch.instrument = t.instrument;
-        if (t.scale !== undefined) patch.scale = t.scale;
-        if (t.root_note !== undefined) patch.rootNote = t.root_note;
-        if (t.notes_per_bar !== undefined) patch.notesPerBar = t.notes_per_bar;
-        if (t.register_base_midi !== undefined) patch.registerBaseMidi = t.register_base_midi;
-        if (t.chord_mode !== undefined) patch.chordMode = t.chord_mode;
+        if (t.instrument != null) patch.instrument = t.instrument;
+        if (t.scale != null) patch.scale = t.scale;
+        if (t.root_note != null) patch.rootNote = t.root_note;
+        if (t.notes_per_bar != null) patch.notesPerBar = t.notes_per_bar;
+        if (t.register_base_midi != null) patch.registerBaseMidi = t.register_base_midi;
+        if (t.chord_mode != null) patch.chordMode = t.chord_mode;
         if (Object.keys(patch).length > 0) {
           setTrackConfigs((prev) => ({ ...prev, [ticker]: { ...prev[ticker], ...patch } }));
+          // Lock the assistant's per-track arrangement so a later global change
+          // doesn't quietly wipe it (unless the user enables "override locks").
+          setLockedTracks((prev) => new Set(prev).add(ticker));
         }
       }
     }
@@ -540,16 +615,18 @@ export function HomePage() {
             legato={legato}
             swing={swing}
             chordMode={chordMode}
-            onScaleChange={setScale}
-            onRootNoteChange={setRootNote}
-            onNotesPerBarChange={setNotesPerBar}
+            onScaleChange={handleGlobalScaleChange}
+            onRootNoteChange={handleGlobalRootNoteChange}
+            onNotesPerBarChange={handleGlobalNotesPerBarChange}
             onBpmChange={setBpm}
             onTotalDurationChange={setTotalDuration}
             onSpeedModeChange={setSpeedMode}
-            onGlobalInstrumentChange={setGlobalInstrument}
+            onGlobalInstrumentChange={handleGlobalInstrumentChange}
             onLegatoChange={setLegato}
             onSwingChange={setSwing}
-            onChordModeChange={setChordMode}
+            onChordModeChange={handleGlobalChordModeChange}
+            overrideLocks={overrideLocks}
+            onOverrideLocksChange={setOverrideLocks}
           />
           <AssistantPanel
             tickers={tickers}
@@ -569,19 +646,22 @@ export function HomePage() {
 
       <main className="main-content">
         {!composition ? (
-          <div className="empty-state">
-            {tickers.length === 0 ? (
-              <>
-                <h2>Ready to make music</h2>
-                <p>Add some tickers on the left to get started.</p>
-              </>
-            ) : (
-              <>
-                <h2>Generating…</h2>
-                <p>Crunching the numbers for {tickers.join(", ")}.</p>
-              </>
-            )}
-          </div>
+          tickers.length === 0 ? (
+            <div className="empty-state">
+              <h2>Ready to make music</h2>
+              <p>Add some tickers on the left to get started.</p>
+            </div>
+          ) : (
+            <div className="chart-panels">
+              {tickers.map((ticker, i) => (
+                <ChartLoadingPanel
+                  key={`pending-${ticker}`}
+                  ticker={ticker}
+                  color={resolveColor(ticker, i)}
+                />
+              ))}
+            </div>
+          )
         ) : (
           <>
             <KeyboardSettings
@@ -631,6 +711,8 @@ export function HomePage() {
                     onTrackMixerChange={(partial) => handleTrackMixerChange(track.ticker, partial)}
                     independent={isIndependent}
                     onToggleIndependent={() => handleToggleIndependent(track.track)}
+                    locked={lockedTracks.has(track.ticker)}
+                    onToggleLock={() => handleToggleLock(track.ticker)}
                   />
                 );
               })}

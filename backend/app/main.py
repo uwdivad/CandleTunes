@@ -3,11 +3,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api import assistant, auth, chart, midi, movers, sonify
 from app.config import settings
 from app.db.engine import init_db
 from app.logging_config import log_call
+from app.rate_limit import limiter
 
 
 @asynccontextmanager
@@ -18,6 +22,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="CandleTunes API", lifespan=lifespan)
+
+# Rate limiting: register the shared limiter, return 429 on overflow, and apply
+# the default per-client limit to every route via middleware. Added before CORS
+# below so CORS stays the outermost layer and 429 responses keep CORS headers.
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

@@ -10,6 +10,7 @@ frontend/dist/
 .env
 *.local
 ai_history/
+education/
 
 # Terraform
 **/.terraform/

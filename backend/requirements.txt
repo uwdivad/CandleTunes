@@ -1,6 +1,8 @@
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 yfinance>=0.2.55
+tenacity>=8.2
+slowapi>=0.1.9
 pandas>=2.2.0
 numpy>=1.26.0
 pretty_midi>=0.2.10
