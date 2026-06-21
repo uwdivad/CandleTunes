@@ -9,6 +9,7 @@ frontend/dist/
 .idea/
 .env
 *.local
+*.local.ps1
 ai_history/
 education/
 

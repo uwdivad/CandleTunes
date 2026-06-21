@@ -33,6 +33,41 @@ resource "google_cloud_run_v2_service" "app" {
         value = "/tmp/cache"
       }
 
+      # Sensitive value: stored in Secret Manager, injected at runtime. The
+      # secret + its version are created outside Terraform so the key never
+      # enters state. The runtime SA is granted accessor in iam.tf.
+      env {
+        name = "ANTHROPIC_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = "anthropic-api-key"
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "OPENAI_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = "openai-api-key"
+            version = "latest"
+          }
+        }
+      }
+
+      # Non-secret config. Empty google_client_id disables auth (protected
+      # endpoints then return 503); set it in terraform.tfvars to enable.
+      env {
+        name  = "LLM_PROVIDER"
+        value = var.llm_provider
+      }
+
+      env {
+        name  = "GOOGLE_CLIENT_ID"
+        value = var.google_client_id
+      }
+
       resources {
         limits = {
           cpu    = "1"

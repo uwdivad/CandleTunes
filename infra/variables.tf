@@ -56,3 +56,15 @@ variable "max_instances" {
   description = "Maximum number of container instances (scales down to 0 when idle)."
   default     = 2
 }
+
+variable "llm_provider" {
+  type        = string
+  description = "Default LLM provider for the arranger assistant (\"anthropic\" or \"openai\"). Per-request overridable."
+  default     = "anthropic"
+}
+
+variable "google_client_id" {
+  type        = string
+  description = "Google OAuth 2.0 Web client ID used as the ID-token audience. Empty disables auth (protected endpoints return 503)."
+  default     = ""
+}
