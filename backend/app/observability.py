@@ -74,10 +74,17 @@ def trace_span(
     user_id: str | None = None,
     session_id: str | None = None,
     metadata: dict | None = None,
+    input=None,
+    tags: list[str] | None = None,
 ):
     """Open the root trace span and propagate trace-level attributes to every
     observation created inside the `with` (incl. the provider's generation).
-    Yields the span (for a final `.update(output=...)`) or None. Flushes on exit."""
+    Yields the span (for a final `.update(output=...)`) or None. Flushes on exit.
+
+    `input` is set on the root span (which is what the trace's input renders from
+    in the v4 observation-centric model) — pass only the meaningful, non-sensitive
+    payload (e.g. the user's latest message), not every function arg. `tags`
+    propagate to every child observation for dashboard filtering."""
     lf = get_langfuse()
     if lf is None:
         yield None
@@ -86,8 +93,12 @@ def trace_span(
 
     ctx = {"trace_id": trace_id} if trace_id else None
     try:
-        with lf.start_as_current_observation(name=name, as_type="span", trace_context=ctx) as span:
-            with propagate_attributes(user_id=user_id, session_id=session_id, metadata=metadata):
+        with lf.start_as_current_observation(
+            name=name, as_type="span", trace_context=ctx, input=input
+        ) as span:
+            with propagate_attributes(
+                user_id=user_id, session_id=session_id, metadata=metadata, tags=tags
+            ):
                 yield span
     finally:
         lf.flush()

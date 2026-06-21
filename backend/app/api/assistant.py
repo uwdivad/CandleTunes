@@ -60,6 +60,13 @@ def chat(
     summaries = summarize_tickers(req.tickers, req.start, req.end)
     system = build_system_prompt(summaries, req.current_settings)
 
+    # The trace's input renders from the root span's input. Surface only the
+    # user's latest turn — not the full system prompt or every arg — so traces
+    # stay readable and we don't leak the prompt scaffolding into Langfuse.
+    latest_user_message = next(
+        (m.content for m in reversed(req.messages) if m.role == "user"), None
+    )
+
     # Mint the trace id up front: save_run() runs after the LLM call, so this is
     # the only way to persist the id (for feedback scoring) alongside the run.
     trace_id = new_trace_id()
@@ -86,6 +93,8 @@ def chat(
         user_id=user.sub,
         session_id=conversation_id,
         metadata={"provider": provider_name, "model": model, "tickers": req.tickers},
+        input=latest_user_message,
+        tags=["feature:assistant", f"provider:{provider_name}"],
     ) as span:
         started = time.monotonic()
         try:
