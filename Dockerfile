@@ -12,6 +12,11 @@ COPY frontend/ ./
 # Empty base URL => the SPA calls the API with relative /api/* paths (same origin
 # as the container that also serves these static files). Overrides frontend/.env.
 ENV VITE_API_BASE_URL=""
+# Google OAuth Web client ID, inlined into the SPA at build time (Vite reads
+# VITE_* at build, not runtime). frontend/.env is excluded from the build context
+# (.dockerignore), so set it here. Public value; must match the backend's
+# GOOGLE_CLIENT_ID (terraform.tfvars / Cloud Run env).
+ENV VITE_GOOGLE_CLIENT_ID="114668854768-b4uecrht1h0d7940s5a80oht1uopfnl5.apps.googleusercontent.com"
 RUN npm run build
 
 # ---- Stage 2: Python runtime that serves both the API and the built frontend ----

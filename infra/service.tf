@@ -56,6 +56,29 @@ resource "google_cloud_run_v2_service" "app" {
         }
       }
 
+      # Langfuse LLM observability. Both keys are credentials (public key is the
+      # basic-auth username paired with the secret), so both live in Secret
+      # Manager like the API keys above. Langfuse auto-enables once both are set.
+      env {
+        name = "LANGFUSE_PUBLIC_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = "langfuse-public-key"
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "LANGFUSE_SECRET_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = "langfuse-secret-key"
+            version = "latest"
+          }
+        }
+      }
+
       # Non-secret config. Empty google_client_id disables auth (protected
       # endpoints then return 503); set it in terraform.tfvars to enable.
       env {
@@ -66,6 +89,12 @@ resource "google_cloud_run_v2_service" "app" {
       env {
         name  = "GOOGLE_CLIENT_ID"
         value = var.google_client_id
+      }
+
+      # Non-secret: which Langfuse instance to send traces to.
+      env {
+        name  = "LANGFUSE_HOST"
+        value = var.langfuse_host
       }
 
       resources {

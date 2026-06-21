@@ -68,3 +68,9 @@ variable "google_client_id" {
   description = "Google OAuth 2.0 Web client ID used as the ID-token audience. Empty disables auth (protected endpoints return 503)."
   default     = ""
 }
+
+variable "langfuse_host" {
+  type        = string
+  description = "Langfuse instance the service sends LLM traces to. Tracing only activates when the langfuse-public-key/langfuse-secret-key secrets also exist."
+  default     = "https://us.cloud.langfuse.com"
+}

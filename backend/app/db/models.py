@@ -49,6 +49,10 @@ class AssistantRun(Base):
     refusal: Mapped[bool] = mapped_column(Boolean, default=False)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Langfuse trace id for this turn (None when observability is disabled), so
+    # feedback can attach a score to the right trace.
+    langfuse_trace_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
     feedback: Mapped[list["AssistantFeedback"]] = relationship(
         back_populates="run", cascade="all, delete-orphan"
     )

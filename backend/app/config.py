@@ -38,6 +38,17 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-opus-4-8"
     openai_model: str = "gpt-4.1"
 
+    # Langfuse LLM observability. Disabled (no-op) unless both keys are set; inject
+    # them as Cloud Run env vars like the other LLM config. Self-hosted: point
+    # langfuse_host at your deployment (defaults to the local self-host port).
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "http://localhost:3000"
+
+    @property
+    def langfuse_enabled(self) -> bool:
+        return bool(self.langfuse_public_key and self.langfuse_secret_key)
+
     # Persistence for assistant runs + feedback. SQLite keeps local dev and tests
     # infra-free; set a postgresql+psycopg:// URL in prod — the same ORM models
     # run on both.

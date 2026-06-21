@@ -12,6 +12,7 @@ from app.db.repository import get_run, save_feedback, save_run
 from app.llm import get_provider
 from app.llm.base import REFUSAL_MESSAGE, build_system_prompt
 from app.logging_config import log_call
+from app.observability import new_trace_id, record_feedback_score, trace_span
 from app.rate_limit import limiter
 from app.models.assistant import (
     AssistantChatResponse,
@@ -59,6 +60,9 @@ def chat(
     summaries = summarize_tickers(req.tickers, req.start, req.end)
     system = build_system_prompt(summaries, req.current_settings)
 
+    # Mint the trace id up front: save_run() runs after the LLM call, so this is
+    # the only way to persist the id (for feedback scoring) alongside the run.
+    trace_id = new_trace_id()
     run_fields = dict(
         conversation_id=conversation_id,
         user_sub=user.sub,
@@ -70,31 +74,46 @@ def chat(
         end=req.end,
         data_summary=summaries,
         request_messages=[m.model_dump() for m in req.messages],
+        langfuse_trace_id=trace_id,
     )
 
-    started = time.monotonic()
-    try:
-        result = provider.complete(system, _recent_messages(req.messages))
-    except Exception as exc:  # noqa: BLE001 — record the failure, surface a 502
-        save_run(
+    # trace_span nests the provider's generation under one trace, propagates the
+    # user/session/metadata to it, and flushes on exit (required on Cloud Run with
+    # the sync client); no-op when disabled.
+    with trace_span(
+        "assistant.chat",
+        trace_id=trace_id,
+        user_id=user.sub,
+        session_id=conversation_id,
+        metadata={"provider": provider_name, "model": model, "tickers": req.tickers},
+    ) as span:
+        started = time.monotonic()
+        try:
+            result = provider.complete(system, _recent_messages(req.messages))
+        except Exception as exc:  # noqa: BLE001 — record the failure, surface a 502
+            save_run(
+                db,
+                **run_fields,
+                latency_ms=int((time.monotonic() - started) * 1000),
+                error=str(exc),
+            )
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+
+        latency_ms = int((time.monotonic() - started) * 1000)
+        # Providers map a model decline (or unparseable output) to REFUSAL_MESSAGE.
+        refusal = result.message == REFUSAL_MESSAGE
+        run = save_run(
             db,
             **run_fields,
-            latency_ms=int((time.monotonic() - started) * 1000),
-            error=str(exc),
+            result_message=result.message,
+            result_settings=result.settings.model_dump(exclude_none=True),
+            latency_ms=latency_ms,
+            refusal=refusal,
         )
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
-
-    latency_ms = int((time.monotonic() - started) * 1000)
-    # Providers map a model decline (or unparseable output) to REFUSAL_MESSAGE.
-    refusal = result.message == REFUSAL_MESSAGE
-    run = save_run(
-        db,
-        **run_fields,
-        result_message=result.message,
-        result_settings=result.settings.model_dump(exclude_none=True),
-        latency_ms=latency_ms,
-        refusal=refusal,
-    )
+        if span:
+            span.update(
+                output=result.message, metadata={"refusal": refusal, "run_id": run.id}
+            )
 
     return AssistantChatResponse(
         message=result.message, settings=result.settings, run_id=run.id
@@ -109,7 +128,9 @@ def feedback(
     db: Session = Depends(get_db),
 ) -> dict[str, str]:
     """Record a thumbs up/down (+ optional note) on a run. Sign-in required."""
-    if get_run(db, req.run_id) is None:
+    run = get_run(db, req.run_id)
+    if run is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown run_id.")
     save_feedback(db, run_id=req.run_id, user_sub=user.sub, rating=req.rating, note=req.note)
+    record_feedback_score(run.langfuse_trace_id, req.rating)
     return {"status": "ok"}
