@@ -33,14 +33,15 @@ With scale-to-zero, idle cost is ~$0.
 The app's API keys and Langfuse credentials are kept out of Terraform state, so the
 secret **containers and their versions are created manually** with `gcloud`.
 Terraform only grants the runtime service account accessor on them (`iam.tf`) and
-references them from the Cloud Run env (`service.tf`). The four secrets:
+references them from the Cloud Run env (`service.tf`). The secrets:
 
-| Secret                | Holds                                  | Required?                          |
-| --------------------- | -------------------------------------- | ---------------------------------- |
-| `anthropic-api-key`   | Anthropic API key (`sk-ant-…`)         | when `llm_provider = "anthropic"`  |
-| `openai-api-key`      | OpenAI API key (`sk-…`)                | when `llm_provider = "openai"`     |
-| `langfuse-public-key` | Langfuse public key (`pk-lf-…`)        | for LLM tracing (both keys needed) |
-| `langfuse-secret-key` | Langfuse secret key (`sk-lf-…`)        | for LLM tracing (both keys needed) |
+| Secret                 | Holds                                    | Required?                          |
+| ---------------------- | ---------------------------------------- | ---------------------------------- |
+| `anthropic-api-key`    | Anthropic API key (`sk-ant-…`)           | when `llm_provider = "anthropic"`  |
+| `openai-api-key`       | OpenAI API key (`sk-…`)                  | when `llm_provider = "openai"`     |
+| `langfuse-public-key`  | Langfuse public key (`pk-lf-…`)          | for LLM tracing (both keys needed) |
+| `langfuse-secret-key`  | Langfuse secret key (`sk-lf-…`)          | for LLM tracing (both keys needed) |
+| `google-client-secret` | OAuth 2.0 Web client secret (`GOCSPX-…`) | for Google sign-in (auth-code exchange) |
 
 Create each secret **and add a version** with the real value. A secret with no
 version causes a `versions/latest was not found` deploy error:

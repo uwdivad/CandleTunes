@@ -91,6 +91,19 @@ resource "google_cloud_run_v2_service" "app" {
         value = var.google_client_id
       }
 
+      # Secret: the OAuth client secret. Used only by POST /api/auth/google to
+      # exchange the sign-in popup's auth code for an ID token. Created
+      # out-of-band in Secret Manager like the API keys above.
+      env {
+        name = "GOOGLE_CLIENT_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = "google-client-secret"
+            version = "latest"
+          }
+        }
+      }
+
       # Non-secret: which Langfuse instance to send traces to.
       env {
         name  = "LANGFUSE_BASE_URL"

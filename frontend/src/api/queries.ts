@@ -13,6 +13,19 @@ import type {
   User,
 } from "./types";
 
+/** Exchange a Google auth-code (from the sign-in popup) for an ID token. The
+ *  backend does the exchange because it needs the OAuth client secret. */
+export function useGoogleAuth() {
+  return useMutation({
+    mutationFn: async (code: string) => {
+      const { data } = await apiClient.post<{ id_token: string }>("/api/auth/google", {
+        code,
+      });
+      return data;
+    },
+  });
+}
+
 /** Fetch the signed-in user's verified profile. Enabled only when a token is present. */
 export function useMe(enabled: boolean) {
   return useQuery({

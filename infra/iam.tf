@@ -16,6 +16,7 @@ resource "google_secret_manager_secret_iam_member" "assistant_keys" {
     "openai-api-key",
     "langfuse-public-key",
     "langfuse-secret-key",
+    "google-client-secret",
   ])
   project   = var.project_id
   secret_id = each.value

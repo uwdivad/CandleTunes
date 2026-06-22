@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     # tokens; must match VITE_GOOGLE_CLIENT_ID on the frontend. Empty disables
     # auth (protected endpoints then return 503).
     google_client_id: str = ""
+    # Google OAuth 2.0 Web client *secret*. Paired with google_client_id to
+    # exchange the sign-in popup's authorization code for an ID token in
+    # POST /api/auth/google (the custom "Sign in with Google" button uses the
+    # auth-code flow). Secret value — inject from Secret Manager in prod; leave
+    # empty locally to fall back to the GSI flow being disabled.
+    google_client_secret: str = ""
     # Directory holding the built frontend (frontend/dist), copied into the
     # container image. Absent in local dev, so the static mount is skipped there.
     static_dir: Path = Path(__file__).resolve().parent.parent / "static"

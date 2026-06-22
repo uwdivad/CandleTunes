@@ -138,6 +138,36 @@ h1 {
   white-space: nowrap;
 }
 
+.auth-signin {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.auth-signin:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.auth-signin:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-signin svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 .auth-signout {
   background: transparent;
   border: 1px solid var(--border);
