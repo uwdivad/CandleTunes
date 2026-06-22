@@ -59,10 +59,17 @@ class TrackInfo(BaseModel):
     bar_count: int
 
 
+class FailedTrack(BaseModel):
+    track: int
+    ticker: str
+    error: str
+
+
 class SonifyResponse(BaseModel):
     notes: list[NoteEvent]
     tracks: list[TrackInfo]
     total_duration_sec: float
+    failed: list[FailedTrack] = Field(default_factory=list)
 
 
 class MidiExportRequest(BaseModel):

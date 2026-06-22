@@ -93,8 +93,8 @@ resource "google_cloud_run_v2_service" "app" {
 
       # Non-secret: which Langfuse instance to send traces to.
       env {
-        name  = "LANGFUSE_HOST"
-        value = var.langfuse_host
+        name  = "LANGFUSE_BASE_URL"
+        value = var.langfuse_base_url
       }
 
       resources {
@@ -106,7 +106,13 @@ resource "google_cloud_run_v2_service" "app" {
     }
   }
 
-  depends_on = [null_resource.build_push]
+  # The revision mounts the assistant/Langfuse secrets, so the runtime SA must
+  # have accessor on them before the revision is deployed — otherwise the deploy
+  # races the IAM grant and fails with "Permission denied on secret".
+  depends_on = [
+    null_resource.build_push,
+    google_secret_manager_secret_iam_member.assistant_keys,
+  ]
 
   # The image is set on the initial (bootstrap) deploy, then owned by the GitHub
   # Actions workflow (`gcloud run deploy`). Ignore drift so CI and Terraform

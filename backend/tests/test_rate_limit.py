@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 import app.api.sonify as sonify_api
 from app.config import settings
 from app.main import app
+from app.models.sonify import TrackInfo
 
 SONIFY_BODY = {"tracks": [{"ticker": "AAA", "start": "2024-01-01", "end": "2024-02-01"}]}
 
@@ -18,7 +19,11 @@ SONIFY_BODY = {"tracks": [{"ticker": "AAA", "start": "2024-01-01", "end": "2024-
 @pytest.fixture
 def client(monkeypatch):
     # Allowed requests must not hit yfinance — return an empty composition cheaply.
-    monkeypatch.setattr(sonify_api, "sonify_composition", lambda *a, **k: ([], [], 0.0))
+    monkeypatch.setattr(
+        sonify_api,
+        "sonify_composition",
+        lambda *a, **k: ([], [TrackInfo(track=0, ticker="AAA", instrument="piano", register_base_midi=60, bar_count=0)], 0.0, []),
+    )
     return TestClient(app)
 
 

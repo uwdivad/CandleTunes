@@ -638,6 +638,11 @@ export function HomePage() {
           {sonifyMutation.isError && (
             <p className="error">{(sonifyMutation.error as Error).message}</p>
           )}
+          {!sonifyMutation.isPending && composition?.failed && composition.failed.length > 0 && (
+            <p className="error">
+              Skipped {composition.failed.map((f) => f.ticker).join(', ')} — no data available.
+            </p>
+          )}
           <button type="button" className="reset-defaults-btn" onClick={handleResetDefaults}>
             Reset to defaults
           </button>

@@ -1,9 +1,17 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import Callable
 
 import pandas as pd
 
 from app.logging_config import log_call
-from app.models.sonify import ChordMode, NoteEvent, ScaleName, TrackInfo, TrackRequest
+from app.models.sonify import (
+    ChordMode,
+    FailedTrack,
+    NoteEvent,
+    ScaleName,
+    TrackInfo,
+    TrackRequest,
+)
 from app.sonify.pitch import (
     chord_tone_pitches,
     compute_log_returns,
@@ -18,6 +26,7 @@ BASE_REGISTERS = [60, 48, 72, 36, 84]  # C4, C3, C5, C2, C6
 SYNTH_INSTRUMENTS = ["synth_triangle", "synth_sine", "synth_sawtooth"]
 LEGATO = 0.9
 MAX_BARS = 1000
+MAX_FETCH_WORKERS = 8
 
 
 @log_call
@@ -194,14 +203,42 @@ def sonify_composition(
     legato: float = LEGATO,
     swing: float = 0.0,
     chord_mode: ChordMode = "off",
-) -> tuple[list[NoteEvent], list[TrackInfo]]:
+) -> tuple[list[NoteEvent], list[TrackInfo], float, list[FailedTrack]]:
     all_notes: list[NoteEvent] = []
     track_infos: list[TrackInfo] = []
+    failed: list[FailedTrack] = []
     max_duration_sec: float = 0.0
 
+    # Phase 1: fetch every track's OHLCV concurrently. Fetches are network-bound
+    # (yfinance releases the GIL while waiting), so a thread pool turns N serial
+    # round-trips into ~1. Results are stored positionally; an exception is kept
+    # in place so a single bad ticker degrades to a partial result rather than
+    # failing the whole composition.
+    fetched: list[pd.DataFrame | Exception] = [None] * len(tracks)  # type: ignore[list-item]
+    with ThreadPoolExecutor(max_workers=min(MAX_FETCH_WORKERS, len(tracks))) as pool:
+        future_to_idx = {
+            pool.submit(
+                fetch_ohlcv, t.ticker, t.start, t.end, t.interval
+            ): i
+            for i, t in enumerate(tracks)
+        }
+        for future, i in future_to_idx.items():
+            try:
+                fetched[i] = future.result()
+            except Exception as exc:  # noqa: BLE001 - recorded per-track below
+                fetched[i] = exc
+
+    # Phase 2: CPU-bound sonification, sequential and order-preserving. Track
+    # indices stay positional (failures leave a gap) so the frontend's
+    # instrument/colour/chart keying by `track` index remains correct.
     for idx, track_req in enumerate(tracks):
-        df = fetch_ohlcv(track_req.ticker, track_req.start, track_req.end, track_req.interval)
-        df = _maybe_resample(df)
+        result = fetched[idx]
+        if isinstance(result, Exception):
+            failed.append(
+                FailedTrack(track=idx, ticker=track_req.ticker, error=str(result))
+            )
+            continue
+        df = _maybe_resample(result)
 
         base_midi = (
             track_req.register_base_midi
@@ -243,4 +280,4 @@ def sonify_composition(
             )
         )
 
-    return all_notes, track_infos, max_duration_sec
+    return all_notes, track_infos, max_duration_sec, failed

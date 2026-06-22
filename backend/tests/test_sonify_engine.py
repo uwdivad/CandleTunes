@@ -137,10 +137,11 @@ def test_sonify_composition_multi_track_registers():
         TrackRequest(ticker="BTC-USD", start="2024-01-01", end="2024-02-01"),
     ]
 
-    notes, track_infos, max_dur = sonify_composition(
+    notes, track_infos, max_dur, failed = sonify_composition(
         tracks, 60.0, None, 1, ScaleName.major, 0, None, fake_fetch
     )
 
+    assert failed == []
     assert track_infos[0].track == 0
     assert track_infos[0].instrument == "piano"
     assert track_infos[1].track == 1
@@ -153,3 +154,28 @@ def test_sonify_composition_multi_track_registers():
     assert len(track1_notes) == 20
     # all tracks share the same timeline
     assert max(n.time_sec + n.duration_sec for n in notes) <= 60.0 + 1e-6
+
+
+def test_sonify_composition_partial_success_keeps_indices():
+    from app.models.sonify import TrackRequest
+
+    def fake_fetch(ticker, start, end, interval):
+        if ticker == "BAD":
+            raise ValueError(f"No data returned for ticker '{ticker}'")
+        return _make_df(20, seed=hash(ticker) % 1000)
+
+    tracks = [
+        TrackRequest(ticker="AAPL", start="2024-01-01", end="2024-02-01"),
+        TrackRequest(ticker="BAD", start="2024-01-01", end="2024-02-01"),
+        TrackRequest(ticker="MSFT", start="2024-01-01", end="2024-02-01"),
+    ]
+
+    notes, track_infos, _max_dur, failed = sonify_composition(
+        tracks, 60.0, None, 1, ScaleName.major, 0, None, fake_fetch
+    )
+
+    # Failed track is reported, surviving tracks keep their original indices.
+    assert [f.ticker for f in failed] == ["BAD"]
+    assert failed[0].track == 1
+    assert [ti.track for ti in track_infos] == [0, 2]
+    assert {n.track for n in notes} == {0, 2}

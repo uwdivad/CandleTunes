@@ -22,7 +22,47 @@ With scale-to-zero, idle cost is ~$0.
    > `Remove-Item Env:GOOGLE_APPLICATION_CREDENTIALS`
 4. **Verify the custom domain** for your account in
    [Search Console](https://search.google.com/search-console) — Cloud Run domain
-   mappings require a verified domain or `terraform apply` will fail.
+   mappings require a verified domain or `terraform apply` will fail. To skip the
+   domain and deploy on the `*.run.app` URL only, set `enable_domain_mapping = false`
+   in `terraform.tfvars`.
+5. **Create the Secret Manager secrets** (see below) — the Cloud Run revision mounts
+   them at boot, so they must exist *before* `terraform apply` or the deploy fails.
+
+## Secrets (one-time, out-of-band)
+
+The app's API keys and Langfuse credentials are kept out of Terraform state, so the
+secret **containers and their versions are created manually** with `gcloud`.
+Terraform only grants the runtime service account accessor on them (`iam.tf`) and
+references them from the Cloud Run env (`service.tf`). The four secrets:
+
+| Secret                | Holds                                  | Required?                          |
+| --------------------- | -------------------------------------- | ---------------------------------- |
+| `anthropic-api-key`   | Anthropic API key (`sk-ant-…`)         | when `llm_provider = "anthropic"`  |
+| `openai-api-key`      | OpenAI API key (`sk-…`)                | when `llm_provider = "openai"`     |
+| `langfuse-public-key` | Langfuse public key (`pk-lf-…`)        | for LLM tracing (both keys needed) |
+| `langfuse-secret-key` | Langfuse secret key (`sk-lf-…`)        | for LLM tracing (both keys needed) |
+
+Create each secret **and add a version** with the real value. A secret with no
+version causes a `versions/latest was not found` deploy error:
+
+```bash
+# Create the container, then add the value as a version. Repeat per secret.
+gcloud secrets create langfuse-public-key --project=PROJECT_ID --replication-policy=automatic
+echo -n "pk-lf-..." | gcloud secrets versions add langfuse-public-key --project=PROJECT_ID --data-file=-
+```
+
+> **PowerShell:** `echo -n` doesn't exist; pipe the string literal instead —
+> `"pk-lf-..." | gcloud secrets versions add langfuse-public-key --project=PROJECT_ID --data-file=-`.
+> Watch for trailing newlines if you pipe from a file: a stray `\r\n` in a key
+> makes Langfuse basic-auth silently 401. Prefer a trimmed `--data-file=key.txt`.
+
+Confirm each has an `enabled` version before applying:
+
+```bash
+gcloud secrets versions list langfuse-public-key --project=PROJECT_ID
+```
+
+Langfuse tracing auto-enables once both `langfuse-*` secrets resolve at runtime.
 
 ## Deploy
 
@@ -98,6 +138,14 @@ terraform destroy
 - **`PERMISSION_DENIED` on the Cloud Build step during the first `apply`**: the
   Cloud Build API was just enabled and hasn't propagated yet. Wait ~30–60s and
   re-run `terraform apply` — it resumes at the build step.
+- **Deploy fails with `Secret … not found` / `404` on a `langfuse-*` (or `*-api-key`)
+  secret**: the secret container doesn't exist. Create it (see [Secrets](#secrets-one-time-out-of-band)).
+- **Deploy fails with `Permission denied on secret … for Revision service account`**:
+  the IAM accessor grant hasn't propagated to the revision yet (eventual consistency).
+  The grant ordering is enforced via `depends_on` in `service.tf`, so just re-run
+  `terraform apply`; wait ~1–2 min if it recurs.
+- **Deploy fails with `secrets/…/versions/latest was not found`**: the secret exists
+  but has no version. Add one with `gcloud secrets versions add …` (see Secrets).
 
 ## Notes
 

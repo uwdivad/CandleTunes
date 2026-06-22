@@ -69,7 +69,7 @@ variable "google_client_id" {
   default     = ""
 }
 
-variable "langfuse_host" {
+variable "langfuse_base_url" {
   type        = string
   description = "Langfuse instance the service sends LLM traces to. Tracing only activates when the langfuse-public-key/langfuse-secret-key secrets also exist."
   default     = "https://us.cloud.langfuse.com"

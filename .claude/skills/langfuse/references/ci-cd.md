@@ -25,11 +25,11 @@ description: Set up or extend agent regression checks / gating in GitHub Actions
 
 ## Common Issues
 
-| Issue | Solution |
-|-------|----------|
-| `gh` is missing or not authenticated | Install the GitHub CLI if needed, then run `gh auth status` and `gh auth login` before using `gh secret` or `gh workflow` commands. |
-| Local Langfuse environment variables are not set | Set `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and `LANGFUSE_HOST` locally before using `langfuse-cli`; do not ask the user to paste secret values into chat. |
+| Issue | Solution                                                                                                                                                               |
+|-------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `gh` is missing or not authenticated | Install the GitHub CLI if needed, then run `gh auth status` and `gh auth login` before using `gh secret` or `gh workflow` commands.                                    |
+| Local Langfuse environment variables are not set | Set `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and `LANGFUSE_BASE_URL` locally before using `langfuse-cli`; do not ask the user to paste secret values into chat.   |
 | Workflow secrets or action inputs are wrong | Verify `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `langfuse_base_url`, and provider secrets exist in the target repo/environment and are passed to the action step. |
 | Forked PR cannot access secrets | GitHub restricts secret access for forked PRs. Document the limitation or choose a trusted trigger such as internal PR, trusted-branch `push`, or `workflow_dispatch`. |
-| No default/base branch exists | Create an initial empty commit on the intended default branch before trying to verify a PR-triggered workflow. |
-| Script fails reading dataset fields | Re-inspect the dataset items with the Langfuse CLI, check `input`, `expected_output`, and metadata, and extract fields from object-shaped outputs explicitly. |
+| No default/base branch exists | Create an initial empty commit on the intended default branch before trying to verify a PR-triggered workflow.                                                         |
+| Script fails reading dataset fields | Re-inspect the dataset items with the Langfuse CLI, check `input`, `expected_output`, and metadata, and extract fields from object-shaped outputs explicitly.          |

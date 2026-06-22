@@ -96,10 +96,17 @@ export interface TrackInfo {
   bar_count: number;
 }
 
+export interface FailedTrack {
+  track: number;
+  ticker: string;
+  error: string;
+}
+
 export interface SonifyResponse {
   notes: NoteEvent[];
   tracks: TrackInfo[];
   total_duration_sec: number;
+  failed?: FailedTrack[];
 }
 
 export interface MidiExportRequest {

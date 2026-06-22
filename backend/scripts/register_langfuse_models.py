@@ -38,7 +38,7 @@ def main() -> int:
         print("Langfuse not configured (set langfuse_public_key/secret_key).", file=sys.stderr)
         return 1
 
-    url = settings.langfuse_host.rstrip("/") + "/api/public/models"
+    url = settings.langfuse_base_url.rstrip("/") + "/api/public/models"
     auth = (settings.langfuse_public_key, settings.langfuse_secret_key)
 
     for model in MODELS:

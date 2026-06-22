@@ -44,7 +44,7 @@ echo $LANGFUSE_SECRET_KEY   # sk-lf-...
 echo $LANGFUSE_BASE_URL     # https://cloud.langfuse.com (EU), https://us.cloud.langfuse.com (US), https://jp.cloud.langfuse.com (JP) or self-hosted
 ```
 
-If not set, check `.env` in the project root: `export $(grep -v '^#' .env | xargs)`. If `LANGFUSE_HOST` is used instead of `LANGFUSE_BASE_URL`, run `export LANGFUSE_BASE_URL="$LANGFUSE_HOST"`.
+If not set, check `.env` in the project root: `export $(grep -v '^#' .env | xargs)`. If `LANGFUSE_BASE_URL` is used instead of `LANGFUSE_BASE_URL`, run `export LANGFUSE_BASE_URL="$LANGFUSE_BASE_URL"`.
 
 ```bash
 AUTH=$(echo -n "${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}" | base64)

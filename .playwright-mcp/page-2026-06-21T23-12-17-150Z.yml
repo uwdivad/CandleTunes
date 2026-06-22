@@ -1,0 +1,95 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - heading "CandleTunes" [level=1] [ref=e6]
+      - paragraph [ref=e7]: Turn market movement into tunes.
+    - generic [ref=e9]: Loading top movers…
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: Tickers
+        - generic [ref=e13]:
+          - generic [ref=e16]:
+            - generic [ref=e17] [cursor=pointer]:
+              - textbox: "#4f9dde"
+            - generic [ref=e18]: AAPL
+            - button "Settings for AAPL" [ref=e19] [cursor=pointer]: ⚙️
+            - button "Remove AAPL" [ref=e20] [cursor=pointer]: ×
+          - button "Remove all" [ref=e21] [cursor=pointer]
+        - generic [ref=e22]:
+          - textbox "e.g. AAPL, BTC-USD, EURUSD=X" [ref=e23]
+          - button "Add" [ref=e24] [cursor=pointer]
+      - generic [ref=e25]:
+        - generic [ref=e26]: Date range
+        - generic [ref=e27]:
+          - textbox [ref=e28]: 2025-06-21
+          - generic [ref=e29]: to
+          - textbox [ref=e30]: 2026-06-21
+        - generic [ref=e31]:
+          - button "1M" [ref=e32] [cursor=pointer]
+          - button "6M" [ref=e33] [cursor=pointer]
+          - button "1Y" [ref=e34] [cursor=pointer]
+          - button "5Y" [ref=e35] [cursor=pointer]
+      - generic [ref=e36]:
+        - generic [ref=e37]: Sonification
+        - generic "When off, changing a global setting (scale, key, notes/bar, harmony, instrument) skips any chart locked by the assistant, leaving its per-chart settings intact. When on, every global change is forced onto all charts, overriding their locks." [ref=e38]:
+          - checkbox "Override locked charts" [ref=e39]
+          - text: Override locked charts
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - text: Scale
+            - combobox "Scale" [ref=e42]:
+              - option "Major" [selected]
+              - option "Minor"
+              - option "Pentatonic Major"
+              - option "Pentatonic Minor"
+              - option "Chromatic"
+          - generic [ref=e43]:
+            - text: Key
+            - combobox "Key" [ref=e44]:
+              - option "C" [selected]
+              - option "C#"
+              - option "D"
+              - option "D#"
+              - option "E"
+              - option "F"
+              - option "F#"
+              - option "G"
+              - option "G#"
+              - option "A"
+              - option "A#"
+              - option "B"
+          - generic [ref=e45]:
+            - text: Notes/bar
+            - combobox "Notes/bar" [ref=e46]:
+              - option "1" [selected]
+              - option "2"
+          - generic [ref=e47]:
+            - text: Harmony
+            - combobox "Harmony" [ref=e48]:
+              - option "Off" [selected]
+              - option "Triad"
+              - option "Power Chord"
+        - generic [ref=e49]:
+          - text: Global Instrument
+          - combobox "Global Instrument" [ref=e50]:
+            - option "Auto (Default)" [selected]
+            - option "Piano"
+            - option "Synth Triangle"
+            - option "Synth Sine"
+            - option "Synth Sawtooth"
+            - option "Synth Square"
+        - generic [ref=e51]:
+          - button "Target BPM" [ref=e52] [cursor=pointer]
+          - button "Target Duration" [ref=e53] [cursor=pointer]
+        - generic [ref=e54]:
+          - text: "Articulation: 0.90"
+          - 'slider "Articulation: 0.90" [ref=e55]': "0.9"
+        - generic [ref=e56]:
+          - text: "Tempo: 120 BPM"
+          - 'slider "Tempo: 120 BPM" [ref=e57]': "120"
+      - generic [ref=e58]:
+        - heading "Arranger" [level=3] [ref=e60]
+        - paragraph [ref=e61]: Sign in to use the arranger.
+      - button "Reset to defaults" [ref=e62] [cursor=pointer]
+  - main [ref=e63]:
+    - paragraph [ref=e79]: Composing AAPL…
