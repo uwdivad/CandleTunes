@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -7,6 +9,7 @@ from app.config import settings
 from app.logging_config import log_call
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Google's OAuth 2.0 token endpoint, used to exchange an authorization code.
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -45,8 +48,11 @@ def google_auth(req: GoogleAuthRequest) -> GoogleAuthResponse:
             GOOGLE_TOKEN_URL,
             data={
                 "code": req.code,
-                "client_id": settings.google_client_id,
-                "client_secret": settings.google_client_secret,
+                # .strip() guards against a client id/secret stored with a stray
+                # trailing newline (a common Secret Manager mistake) — Google
+                # rejects those with invalid_client.
+                "client_id": settings.google_client_id.strip(),
+                "client_secret": settings.google_client_secret.strip(),
                 # The JS popup auth-code flow performs no real redirect; Google
                 # requires this sentinel value when exchanging a code minted
                 # that way.
@@ -62,11 +68,24 @@ def google_auth(req: GoogleAuthRequest) -> GoogleAuthResponse:
         ) from exc
 
     if resp.status_code != 200:
-        # invalid_grant (expired/reused code), redirect_uri mismatch, etc. The
-        # code originates from the client, so treat a rejection as a 401.
+        # invalid_grant (expired/reused code), redirect_uri_mismatch,
+        # invalid_client (wrong/malformed secret), etc. The OAuth error codes
+        # aren't sensitive, so log the detail and surface the short code to the
+        # caller — it's the only way to tell these failure modes apart.
+        try:
+            err = resp.json()
+        except ValueError:
+            err = {}
+        code = err.get("error", "unknown")
+        logger.warning(
+            "Google code exchange failed: status=%s error=%s description=%s",
+            resp.status_code,
+            code,
+            err.get("error_description"),
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization code exchange failed.",
+            detail=f"Authorization code exchange failed ({code}).",
         )
 
     id_token = resp.json().get("id_token")
